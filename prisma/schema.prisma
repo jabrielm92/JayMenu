@@ -1,6 +1,5 @@
-// JayMenu Prisma schema.
-// Models are added in Step 2 (see JAYMENU_PLAN.md, Section 4).
-// Connection URL lives in prisma.config.ts (Prisma 7).
+// JayMenu Prisma schema — see JAYMENU_PLAN.md Section 4.
+// Money is integer cents. Connection URL lives in prisma.config.ts (Prisma 7).
 
 generator client {
   provider = "prisma-client"
@@ -9,4 +8,189 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model Store {
+  id         String          @id @default(cuid())
+  name       String
+  taxRatePct Decimal?        @db.Decimal(5, 2)
+  categories Category[]
+  groups     ModifierGroup[]
+  versions   MenuVersion[]
+  changes    ChangeLog[]
+  createdAt  DateTime        @default(now())
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  storeId     String
+  store       Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+  items       Item[]
+
+  @@index([storeId])
+}
+
+model Item {
+  id          String          @id @default(cuid())
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceCents  Int
+  taxable     Boolean         @default(true)
+  isAvailable Boolean         @default(true)
+  imageUrl    String?
+  sortOrder   Int             @default(0)
+  groupLinks  ItemGroupLink[]
+
+  @@index([categoryId])
+}
+
+model ModifierGroup {
+  id        String          @id @default(cuid())
+  storeId   String
+  store     Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  minSelect Int             @default(0)
+  maxSelect Int? // null = no limit
+  modifiers Modifier[]
+  links     ItemGroupLink[]
+
+  @@index([storeId])
+}
+
+model Modifier {
+  id         String             @id @default(cuid())
+  groupId    String
+  group      ModifierGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name       String
+  priceCents Int                @default(0)
+  inStock    Boolean            @default(true) // global
+  sortOrder  Int                @default(0)
+  overrides  ModifierOverride[]
+
+  @@index([groupId])
+}
+
+model ItemGroupLink {
+  id             String              @id @default(cuid())
+  itemId         String
+  item           Item                @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  groupId        String
+  group          ModifierGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sortOrder      Int                 @default(0)
+  nameOverride   String?
+  minOverride    Int?
+  maxOverride    Int?
+  maxOverrideSet Boolean             @default(false) // true when override explicitly sets max (incl. "no limit")
+  modOverrides   ModifierOverride[]
+  extras         LinkExtraModifier[]
+
+  @@unique([itemId, groupId])
+  @@index([groupId])
+}
+
+model ModifierOverride {
+  id                 String        @id @default(cuid())
+  linkId             String
+  link               ItemGroupLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  modifierId         String
+  modifier           Modifier      @relation(fields: [modifierId], references: [id], onDelete: Cascade)
+  nameOverride       String?
+  priceCentsOverride Int?
+  hidden             Boolean       @default(false)
+  sortOrderOverride  Int?
+
+  @@unique([linkId, modifierId])
+}
+
+model LinkExtraModifier {
+  id         String        @id @default(cuid())
+  linkId     String
+  link       ItemGroupLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  name       String
+  priceCents Int           @default(0)
+  inStock    Boolean       @default(true)
+  sortOrder  Int           @default(0)
+
+  @@index([linkId])
+}
+
+model ChangeLog {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  summary   String // human-readable, e.g. "Bacon price → $1.50 on Steak & Eggs only"
+  scope     String // "item" | "items" | "all" | "none"
+  before    Json // rows as they were (for undo)
+  after     Json // rows as they became
+  undone    Boolean  @default(false)
+  versionId String? // set when included in a publish
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+}
+
+model MenuVersion {
+  id               String   @id @default(cuid())
+  storeId          String
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  versionNumber    Int
+  note             String?
+  rawSnapshot      Json // all tables for this store (for restore)
+  resolvedSnapshot Json // final customer-facing menu
+  publishedAt      DateTime @default(now())
+
+  @@unique([storeId, versionNumber])
+}
+
+// ---------- NextAuth standard models ----------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String? // credentials provider
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
