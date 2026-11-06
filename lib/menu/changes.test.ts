@@ -238,3 +238,28 @@ describe("must-have: undo", () => {
     expect((await item("B.L.T.")).priceCents).toBe(799);
   });
 });
+
+describe("publish", () => {
+  it("snapshots the draft, marks changes published, blocks their undo, and refuses empty publishes", async () => {
+    const { mod, itemId } = await ids();
+    const first = await engine.publish(DEMO_STORE_ID, "Initial");
+    expect(first).toMatchObject({ ok: true, versionNumber: 1, changeCount: 0 });
+    expect((await engine.publish(DEMO_STORE_ID)).ok).toBe(false);
+
+    const r = await engine.setModifierField(mod("Protein", "Bacon"), "price", 300, { type: "item", itemId: itemId("Waffle & Meat") });
+    const v1 = await db.menuVersion.findFirstOrThrow({ where: { storeId: DEMO_STORE_ID, versionNumber: 1 } });
+    const bacon = (snap: unknown) => {
+      const s = snap as { categories: { items: { name: string; modifierGroups: { name: string; options: { name: string; priceCents: number }[] }[] }[] }[] };
+      const item = s.categories.flatMap((c) => c.items).find((i) => i.name === "Waffle & Meat")!;
+      return item.modifierGroups.find((g) => g.name === "Protein")!.options.find((o) => o.name === "Bacon")!.priceCents;
+    };
+    expect(bacon(v1.resolvedSnapshot)).toBe(0);
+
+    const second = await engine.publish(DEMO_STORE_ID, "Bacon");
+    expect(second).toMatchObject({ ok: true, versionNumber: 2, changeCount: 1 });
+    const v2 = await db.menuVersion.findFirstOrThrow({ where: { storeId: DEMO_STORE_ID, versionNumber: 2 } });
+    expect(bacon(v2.resolvedSnapshot)).toBe(300);
+    expect(await db.changeLog.count({ where: { versionId: null } })).toBe(0);
+    if (r.ok && r.changeId) expect((await engine.undo(r.changeId)).ok).toBe(false);
+  });
+});

@@ -385,3 +385,53 @@ export function summarizeTemplates(menu: ResolvedMenu, groups: TemplateInput[]):
       };
     });
 }
+
+// ---------- Public (customer-facing) menu ----------
+
+export type PublicOption = { id: string; name: string; priceCents: number };
+export type PublicGroup = { id: string; name: string; minSelect: number; maxSelect: number | null; options: PublicOption[] };
+export type PublicItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  taxable: boolean;
+  imageUrl: string | null;
+  modifierGroups: PublicGroup[];
+};
+export type PublicCategory = { id: string; name: string; description: string | null; items: PublicItem[] };
+export type PublicMenu = { storeId: string; storeName: string; taxRatePct: number | null; categories: PublicCategory[] };
+
+/**
+ * The menu a customer sees: inactive categories, unavailable items, hidden and
+ * out-of-stock options removed, and no editor-only metadata. Used by Preview,
+ * the publish snapshot, and the public API.
+ */
+export function toPublicMenu(menu: ResolvedMenu): PublicMenu {
+  const customer = toCustomerMenu(menu);
+  return {
+    storeId: customer.storeId,
+    storeName: customer.storeName,
+    taxRatePct: customer.taxRatePct,
+    categories: customer.categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      items: c.items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        description: i.description,
+        priceCents: i.priceCents,
+        taxable: i.taxable,
+        imageUrl: i.imageUrl,
+        modifierGroups: i.groups.map((g) => ({
+          id: g.groupId,
+          name: g.name,
+          minSelect: g.minSelect,
+          maxSelect: g.maxSelect,
+          options: g.modifiers.map((m) => ({ id: (m.modifierId ?? m.extraId)!, name: m.name, priceCents: m.priceCents })),
+        })),
+      })),
+    })),
+  };
+}

@@ -3,6 +3,7 @@ import {
   resolveGroup,
   resolveMenu,
   toCustomerMenu,
+  toPublicMenu,
   type ExtraInput,
   type LinkInput,
   type ModifierOverrideInput,
@@ -320,5 +321,13 @@ describe("resolveMenu", () => {
     const m = toCustomerMenu(resolveMenu(s2));
     expect(m.categories[0].items.map((i) => i.id)).toEqual(["a", "b"]);
     expect(names(m.categories[0].items[0].groups[0])).not.toContain("Sausage");
+  });
+
+  it("public menu strips editor metadata and hidden options", () => {
+    const p = toPublicMenu(resolveMenu(store));
+    const a = p.categories[0].items[0];
+    expect(Object.keys(a.modifierGroups[0]).sort()).toEqual(["id", "maxSelect", "minSelect", "name", "options"]);
+    expect(a.modifierGroups[0].options[0]).toEqual({ id: "m-bacon", name: "Bacon", priceCents: 150 });
+    expect(p.categories[0].items.map((i) => i.id)).toEqual(["a", "b"]);
   });
 });

@@ -6,7 +6,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
-import { changes, type ChangeResult, type Conflict } from "@/lib/menu/changes";
+import { changes, type ChangeResult, type Conflict, type PublishResult } from "@/lib/menu/changes";
 
 const id = z.string().min(1).max(64);
 const cents = z.number().int().min(-1_000_000).max(10_000_000);
@@ -201,4 +201,15 @@ export async function deleteCategoryAction(input: unknown) {
 
 export async function undoAction(input: unknown) {
   return act(z.object({ changeId: id }), input, (d) => changes().undo(d.changeId));
+}
+
+// ----- Publish -----
+
+export async function publishAction(input: unknown): Promise<PublishResult> {
+  await requireAdmin();
+  const parsed = z.object({ storeId: id, note: z.string().trim().max(500).optional() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  const result = await changes().publish(parsed.data.storeId, parsed.data.note);
+  if (result.ok) refresh();
+  return result;
 }

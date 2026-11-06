@@ -11,7 +11,8 @@
 import { getPrisma, type DB } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { formatCents } from "@/lib/money";
-import { resolveGroup, type GroupField, type ModifierField } from "./resolve";
+import { loadRawSnapshot, loadStoreInput } from "./load";
+import { resolveGroup, resolveMenu, toPublicMenu, type GroupField, type ModifierField } from "./resolve";
 
 type Tx = Prisma.TransactionClient;
 
@@ -39,6 +40,10 @@ export type ChangeOk = {
 };
 export type ChangeFail = { ok: false; error: string };
 export type ChangeResult = ChangeOk | ChangeFail;
+
+export type PublishResult =
+  | { ok: true; versionId: string; versionNumber: number; changeCount: number; summary: string }
+  | ChangeFail;
 
 export type ResetTarget =
   | { kind: "group"; field: GroupField }
@@ -761,6 +766,44 @@ export function createChangeEngine(db: DB) {
     }
   }
 
+  // ----- Publish -----
+
+  /**
+   * Snapshot the current draft as a new MenuVersion and mark every pending change as published.
+   * Refused when nothing changed since the last version (the first publish is always allowed).
+   */
+  async function publish(storeId: string, note?: string | null): Promise<PublishResult> {
+    try {
+      return await db.$transaction(async (tx) => {
+        const store = await tx.store.findUnique({ where: { id: storeId } });
+        if (!store) throw new ChangeError("Store not found.");
+        const pending = await tx.changeLog.count({ where: { storeId, versionId: null, undone: false } });
+        const last = await tx.menuVersion.findFirst({ where: { storeId }, orderBy: { versionNumber: "desc" } });
+        if (last && pending === 0) throw new ChangeError("Nothing to publish — there are no unpublished changes.");
+
+        const storeInput = await loadStoreInput(tx, storeId);
+        const resolved = toPublicMenu(resolveMenu(storeInput!));
+        const raw = await loadRawSnapshot(tx, storeId);
+        const versionNumber = (last?.versionNumber ?? 0) + 1;
+        const version = await tx.menuVersion.create({
+          data: {
+            storeId,
+            versionNumber,
+            note: note?.trim() || null,
+            rawSnapshot: raw as Prisma.InputJsonValue,
+            resolvedSnapshot: resolved as unknown as Prisma.InputJsonValue,
+          },
+        });
+        // Undone changes are swept into the version too, so they leave the pending list.
+        await tx.changeLog.updateMany({ where: { storeId, versionId: null }, data: { versionId: version.id } });
+        return { ok: true as const, versionId: version.id, versionNumber, changeCount: pending, summary: `Published version ${versionNumber} (${pending} change${pending === 1 ? "" : "s"})` };
+      });
+    } catch (e) {
+      if (e instanceof ChangeError) return { ok: false, error: e.message };
+      throw e;
+    }
+  }
+
   /** Most recent change that `undo` would accept, if any. */
   async function latestUndoable(storeId: string) {
     return db.changeLog.findFirst({
@@ -794,6 +837,7 @@ export function createChangeEngine(db: DB) {
     deleteCategory,
     undo,
     latestUndoable,
+    publish,
   };
 }
 

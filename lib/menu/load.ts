@@ -30,15 +30,14 @@ export async function loadResolvedMenu(db: Reader, storeId: string): Promise<Res
 
 /** All raw rows for a store (used for MenuVersion.rawSnapshot). */
 export async function loadRawSnapshot(db: Reader, storeId: string) {
-  const [store, categories, groups] = await Promise.all([
-    db.store.findUnique({ where: { id: storeId } }),
-    db.category.findMany({
-      where: { storeId },
-      include: {
-        items: { include: { groupLinks: { include: { modOverrides: true, extras: true } } } },
-      },
-    }),
-    db.modifierGroup.findMany({ where: { storeId }, include: { modifiers: true } }),
-  ]);
+  // Sequential on purpose: this also runs inside transactions (one connection).
+  const store = await db.store.findUnique({ where: { id: storeId } });
+  const categories = await db.category.findMany({
+    where: { storeId },
+    include: {
+      items: { include: { groupLinks: { include: { modOverrides: true, extras: true } } } },
+    },
+  });
+  const groups = await db.modifierGroup.findMany({ where: { storeId }, include: { modifiers: true } });
   return JSON.parse(JSON.stringify({ store, categories, groups }));
 }
