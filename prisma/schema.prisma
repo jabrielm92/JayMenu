@@ -1,0 +1,12 @@
+// JayMenu Prisma schema.
+// Models are added in Step 2 (see JAYMENU_PLAN.md, Section 4).
+// Connection URL lives in prisma.config.ts (Prisma 7).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
