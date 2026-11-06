@@ -343,3 +343,45 @@ export function toCustomerMenu(menu: ResolvedMenu): ResolvedMenu {
       })),
   };
 }
+
+// ---------- Template summaries (Group Library, Compare, Scope Prompt) ----------
+
+export type TemplateLink = { linkId: string; itemId: string; itemName: string; isCustomized: boolean };
+
+export type TemplateSummary = {
+  id: string;
+  name: string;
+  minSelect: number;
+  maxSelect: number | null;
+  modifiers: TemplateModifierInput[]; // template values, sorted
+  links: TemplateLink[];
+  usedBy: number;
+  customizedCount: number;
+};
+
+/** Describe every template with where it is used (derived from the resolved menu). */
+export function summarizeTemplates(menu: ResolvedMenu, groups: TemplateInput[]): TemplateSummary[] {
+  const linksByGroup = new Map<string, TemplateLink[]>();
+  for (const c of menu.categories)
+    for (const i of c.items)
+      for (const g of i.groups) {
+        const list = linksByGroup.get(g.groupId) ?? [];
+        list.push({ linkId: g.linkId, itemId: i.id, itemName: i.name, isCustomized: g.isCustomized });
+        linksByGroup.set(g.groupId, list);
+      }
+  return [...groups]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((g) => {
+      const links = (linksByGroup.get(g.id) ?? []).sort((a, b) => a.itemName.localeCompare(b.itemName));
+      return {
+        id: g.id,
+        name: g.name,
+        minSelect: g.minSelect,
+        maxSelect: g.maxSelect,
+        modifiers: [...g.modifiers].sort(bySortThenName),
+        links,
+        usedBy: links.length,
+        customizedCount: links.filter((l) => l.isCustomized).length,
+      };
+    });
+}
