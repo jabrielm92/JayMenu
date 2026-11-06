@@ -153,7 +153,7 @@ export async function seedDemo(prisma: PrismaClient, opts: { quiet?: boolean } =
   });
 
   // Admin user.
-  const email = process.env.ADMIN_EMAIL;
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
   if (email && password) {
     const passwordHash = await bcrypt.hash(password, 10);

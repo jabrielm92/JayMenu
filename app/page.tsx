@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { requireAdmin } from "@/lib/auth/guard";
 import { listStores } from "@/lib/menu/queries";
 
 async function StoreList() {
   await connection();
+  await requireAdmin();
   const stores = await listStores();
   if (!stores.length) return <p className="text-muted-foreground">No stores yet — run <code>npm run db:seed</code>.</p>;
   return (

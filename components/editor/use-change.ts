@@ -20,8 +20,9 @@ export function useChange() {
               toast.error(r.error);
               resolve(false);
             }
-          } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Something went wrong");
+          } catch {
+            // Most likely the session expired (the proxy redirects the action to /login).
+            toast.error("Couldn't save — your session may have expired. Refresh the page and sign in again.");
             resolve(false);
           }
         });
