@@ -197,7 +197,7 @@ export function ModifiersView({ data }: { data: EditorData }) {
             </Label>
             <div className="relative">
               <SearchIcon className="absolute top-2 left-2 size-4 text-muted-foreground" />
-              <Input placeholder="Search modifiers or groups…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-60 pl-8" />
+              <Input placeholder="Search modifiers or modifier groups…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-60 pl-8" />
             </div>
           </div>
         </div>

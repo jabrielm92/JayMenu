@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 function ItemBadges({ item }: { item: ResolvedItem }) {
   const n = item.groups.length;
   const c = item.groups.filter((g) => g.isCustomized).length;
-  if (!n) return <span className="text-xs text-muted-foreground">No groups</span>;
+  if (!n) return <span className="text-xs text-muted-foreground">No modifier groups</span>;
   return (
     <span className="text-xs text-muted-foreground">
-      {n} group{n === 1 ? "" : "s"}
+      {n} modifier group{n === 1 ? "" : "s"}
       {c > 0 && <span className="text-amber-700 dark:text-amber-400"> · {c} customized</span>}
     </span>
   );
