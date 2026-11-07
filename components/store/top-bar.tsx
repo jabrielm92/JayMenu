@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth/guard";
+import { loginRequired, requireAdmin } from "@/lib/auth/guard";
 import { getStoreHeader } from "@/lib/menu/queries";
 import { NavLinks } from "./nav-links";
 import { SignOutButton } from "./sign-out-button";
@@ -17,7 +17,7 @@ export async function TopBar({ params }: { params: Promise<{ storeId: string }> 
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4">
-      <Link href="/" className="font-semibold tracking-tight">
+      <Link href={`${base}/menu`} className="font-semibold tracking-tight">
         JayMenu
       </Link>
       <span className="hidden truncate text-sm text-muted-foreground lg:inline">{store.name}</span>
@@ -36,7 +36,7 @@ export async function TopBar({ params }: { params: Promise<{ storeId: string }> 
         <Link href={`${base}/publish`} className="whitespace-nowrap rounded-lg bg-primary px-2.5 py-1 text-sm font-medium text-primary-foreground hover:bg-primary/80">
           Review &amp; Publish
         </Link>
-        <SignOutButton />
+        {loginRequired() && <SignOutButton />}
       </div>
     </header>
   );

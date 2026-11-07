@@ -32,10 +32,10 @@ A restaurant menu editor where modifier groups are **shared templates** and ever
 |---|---|
 | `npm run dev` | Dev server |
 | `npm run build` | Generate the Prisma client and build for production |
-| `npm run start:prod` | `prisma migrate deploy` → create/update admin user → add any **missing** demo store (never wipes) → `next start` |
-| `npm test` | Vitest: resolver unit tests + change-engine tests against `TEST_DATABASE_URL` |
+| `npm run start:prod` | `prisma migrate deploy` → add Big Demo Diner if missing (never wipes) → `next start` |
+| `npm test` | Vitest: resolver unit tests + change-engine tests against `TEST_DATABASE_URL` (uses the small Demo Diner fixture in `test/fixtures/`) |
 | `npm run db:migrate` | Create/apply migrations in development |
-| `npm run db:seed` | Wipe and recreate both demo stores (Demo Diner + Big Demo Diner) |
+| `npm run db:seed` | Wipe and recreate Big Demo Diner |
 | `npm run db:studio` | Prisma Studio |
 
 ## Deploy to Railway
@@ -51,18 +51,31 @@ A restaurant menu editor where modifier groups are **shared templates** and ever
    | `ADMIN_EMAIL` | the admin login email |
    | `ADMIN_PASSWORD` | the admin password |
 4. **Generate a domain**: app service → *Settings* → *Networking* → *Generate Domain*. Put that URL in `NEXTAUTH_URL` and redeploy.
-5. Deploy. `railway.json` sets the build (`npm run build`) and start (`npm run start:prod`) commands. On first start the migrations run, the admin user is created and Demo Diner is seeded. Later deploys never wipe data; changing `ADMIN_PASSWORD` updates the admin's password on the next start.
+5. Deploy. `railway.json` sets the build (`npm run build`) and start (`npm run start:prod`) commands. On first start the migrations run and Big Demo Diner is created. Later deploys never wipe it.
 
-To reset the demo data on Railway, run `npm run db:seed` from a Railway shell (this wipes and recreates both demo stores).
+To reset the demo data on Railway, run `npm run db:seed` from a Railway shell (this wipes and recreates Big Demo Diner).
 
-## Demo stores
+## Demo store
 
-- **Demo Diner** (`demo-diner`): the small menu from the plan (4 categories, 14 items, 5 group modifiers). The automated tests use it.
+The site opens straight into **Big Demo Diner** (`/` redirects to `/stores/big-demo-diner/menu`).
+
+
 - **Big Demo Diner** (`big-demo-diner`): a large Foodhub-style menu (12 categories, 72 items, 26 group modifiers; Add Cheese is shared by 25 items, Choice of Toast by 18, Choice of Meat by 15), with ~25 item-only customizations already applied. Defined in `prisma/big-demo-data.ts`.
+
+## Login (off by default)
+
+There is no login: anyone with the URL can view and edit the menu. To require a login, set these on Railway and redeploy:
+
+| Variable | Value |
+|---|---|
+| `REQUIRE_LOGIN` | `true` |
+| `NEXTAUTH_SECRET` | output of `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | your public URL |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | the admin login |
 
 ## Public API
 
-`GET /api/public/stores/{storeId}/menu` returns the latest **published** menu (no auth). Draft edits never appear here until you Publish. The demo store id is `demo-diner`.
+`GET /api/public/stores/{storeId}/menu` returns the latest **published** menu (no auth). Draft edits never appear here until you Publish. The demo store id is `big-demo-diner`.
 
 ## Architecture
 

@@ -1,6 +1,6 @@
-// Demo Diner data (JAYMENU_PLAN.md Section 8). Used by prisma/seed.ts and the DB tests.
+// Demo Diner (JAYMENU_PLAN.md Section 8) — test fixture only; the app no longer ships this store.
 import bcrypt from "bcryptjs";
-import type { PrismaClient } from "../lib/generated/prisma/client";
+import type { PrismaClient } from "@/lib/generated/prisma/client";
 
 export const DEMO_STORE_ID = "demo-diner";
 

@@ -20,7 +20,8 @@
 - Prisma 7: the connection URL is in `prisma.config.ts` (not the schema). The client is generated to `lib/generated/prisma` (gitignored; `npm install` runs `prisma generate`).
 - Next.js 16: see `AGENTS.md` — read `node_modules/next/dist/docs/` before using unfamiliar APIs. Cache Components is on: pages that read the DB wrap their content in `<Suspense>` and call `await connection()`.
 - shadcn/ui uses the Base UI flavour: compose with the `render` prop (not `asChild`).
-- Auth: `requireAdmin()` (lib/auth/guard.ts) at the top of every page content component and server action; `proxy.ts` redirects signed-out visitors. `/api/public/*` stays open.
+- Auth: login is OFF unless `REQUIRE_LOGIN=true` (owner's choice). Keep calling `requireAdmin()` (lib/auth/guard.ts) at the top of every page content component and server action so it works when turned on. `/api/public/*` always stays open.
+- The app ships one store, Big Demo Diner (`prisma/big-demo-data.ts`); `/` redirects to it. Demo Diner exists only as a test fixture (`test/fixtures/demo-diner.ts`).
 - Tests: `npm test` needs Postgres with the `jaymenu_test` database (`TEST_DATABASE_URL`).
 
 @AGENTS.md

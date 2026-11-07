@@ -1,14 +1,13 @@
-// `npm run db:seed` — wipes and recreates both demo stores (and the admin user from env).
-// See prisma/demo-data.ts (Demo Diner, used by the tests) and prisma/big-demo-data.ts.
+// `npm run db:seed` — wipes and recreates Big Demo Diner (see prisma/big-demo-data.ts).
 import "dotenv/config";
 import { createPrismaClient } from "../lib/db";
 import { seedBigDemo } from "./big-demo-data";
-import { seedDemo } from "./demo-data";
+import { seedAdminFromEnv } from "./admin";
 
 const prisma = createPrismaClient();
 
 async function main() {
-  await seedDemo(prisma);
+  await seedAdminFromEnv(prisma);
   await seedBigDemo(prisma);
 }
 

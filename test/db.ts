@@ -2,7 +2,7 @@
 import { createPrismaClient } from "@/lib/db";
 import { loadResolvedMenu } from "@/lib/menu/load";
 import type { ResolvedGroup, ResolvedItem } from "@/lib/menu/resolve";
-import { DEMO_STORE_ID, seedDemo } from "@/prisma/demo-data";
+import { DEMO_STORE_ID, seedDemo } from "@/test/fixtures/demo-diner";
 import { TEST_DATABASE_URL } from "./global-setup";
 
 export const db = createPrismaClient(TEST_DATABASE_URL);
