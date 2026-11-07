@@ -277,7 +277,7 @@ async function storeIdForGroup(tx: Tx, groupId: string) {
 
 async function getModifier(tx: Tx, modifierId: string) {
   const m = await tx.modifier.findUnique({ where: { id: modifierId }, include: { group: true } });
-  if (!m) throw new ChangeError("Option not found.");
+  if (!m) throw new ChangeError("Modifier not found.");
   return m;
 }
 
@@ -451,7 +451,7 @@ export function createChangeEngine(db: DB) {
       const { all, links } = await linksForScope(tx, m.groupId, scope);
       if (all) {
         await rec.delete("modifier", modifierId);
-        return { storeId: m.group.storeId, summary: `Deleted option "${m.name}" from ${m.group.name} (all linked items)`, scope: "all" };
+        return { storeId: m.group.storeId, summary: `Deleted modifier "${m.name}" from ${m.group.name} (all linked items)`, scope: "all" };
       }
       for (const l of links) await writeModOverride(tx, rec, l.id, m, { hidden: true });
       return { storeId: m.group.storeId, summary: `Hid "${m.name}" ${scopeText(false, links)}`, scope: scopeKind(false, links) };
@@ -476,14 +476,14 @@ export function createChangeEngine(db: DB) {
       const label = `"${data.name}"${data.priceCents ? ` ${formatCents(data.priceCents)}` : ""}`;
       if (all) {
         await rec.create("modifier", { groupId, name: data.name.trim(), priceCents: data.priceCents, sortOrder: await nextSortOrder(g.modifiers) });
-        return { storeId: g.storeId, summary: `Added option ${label} to ${g.name} (all linked items)`, scope: "all" };
+        return { storeId: g.storeId, summary: `Added modifier ${label} to ${g.name} (all linked items)`, scope: "all" };
       }
       for (const l of links) {
         const extras = await tx.linkExtraModifier.findMany({ where: { linkId: l.id } });
         const sortOrder = Math.max(await nextSortOrder(g.modifiers), await nextSortOrder(extras));
         await rec.create("linkExtraModifier", { linkId: l.id, name: data.name.trim(), priceCents: data.priceCents, sortOrder });
       }
-      return { storeId: g.storeId, summary: `Added option ${label} to ${g.name} ${scopeText(false, links)}`, scope: scopeKind(false, links) };
+      return { storeId: g.storeId, summary: `Added modifier ${label} to ${g.name} ${scopeText(false, links)}`, scope: scopeKind(false, links) };
     });
   }
 
@@ -501,7 +501,7 @@ export function createChangeEngine(db: DB) {
   function updateExtra(extraId: string, patch: Partial<{ name: string; priceCents: number; sortOrder: number; inStock: boolean }>) {
     return run(async (tx, rec) => {
       const e = await tx.linkExtraModifier.findUnique({ where: { id: extraId }, include: { link: { include: { item: true, group: true } } } });
-      if (!e) throw new ChangeError("Option not found.");
+      if (!e) throw new ChangeError("Modifier not found.");
       if (patch.name !== undefined && !patch.name.trim()) throw new ChangeError("Name is required.");
       await rec.update("linkExtraModifier", extraId, patch);
       const parts = [
@@ -517,9 +517,9 @@ export function createChangeEngine(db: DB) {
   function deleteExtra(extraId: string) {
     return run(async (tx, rec) => {
       const e = await tx.linkExtraModifier.findUnique({ where: { id: extraId }, include: { link: { include: { item: true, group: true } } } });
-      if (!e) throw new ChangeError("Option not found.");
+      if (!e) throw new ChangeError("Modifier not found.");
       await rec.delete("linkExtraModifier", extraId);
-      return { storeId: e.link.group.storeId, summary: `Removed option "${e.name}" from ${e.link.group.name} on ${e.link.item.name}`, scope: "item" };
+      return { storeId: e.link.group.storeId, summary: `Removed modifier "${e.name}" from ${e.link.group.name} on ${e.link.item.name}`, scope: "item" };
     });
   }
 
@@ -542,10 +542,10 @@ export function createChangeEngine(db: DB) {
           labels.push(`${l.group.name} ${FIELD_LABEL[t.field]}`);
         } else if (t.kind === "extras") {
           for (const e of l.extras) await rec.delete("linkExtraModifier", e.id);
-          labels.push("item-only options");
+          labels.push("item-only modifiers");
         } else {
           const mod = l.group.modifiers.find((m) => m.id === t.modifierId);
-          if (!mod) throw new ChangeError("Option not found.");
+          if (!mod) throw new ChangeError("Modifier not found.");
           const o = l.modOverrides.find((x) => x.modifierId === t.modifierId);
           if (!o) continue;
           if (!t.field) {

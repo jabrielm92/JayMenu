@@ -34,7 +34,7 @@ export function CreateGroupDialog({ storeId, open, onOpenChange }: { storeId: st
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New shared group</DialogTitle>
+          <DialogTitle>New modifier group</DialogTitle>
           <DialogDescription>Link it to items from the Menu editor.</DialogDescription>
         </DialogHeader>
         <form
@@ -67,7 +67,7 @@ export function CreateGroupDialog({ storeId, open, onOpenChange }: { storeId: st
             </div>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="ng-opts">Options (one per line, optional price)</Label>
+            <Label htmlFor="ng-opts">Modifiers (one per line, optional price)</Label>
             <Textarea id="ng-opts" rows={4} placeholder={"Small\nMedium +0.50\nLarge +1.00"} value={options} onChange={(e) => setOptions(e.target.value)} />
           </div>
         </form>
@@ -76,7 +76,7 @@ export function CreateGroupDialog({ storeId, open, onOpenChange }: { storeId: st
             Cancel
           </Button>
           <Button type="submit" form="new-group" disabled={!name.trim() || pending}>
-            Create group
+            Create modifier group
           </Button>
         </DialogFooter>
       </DialogContent>

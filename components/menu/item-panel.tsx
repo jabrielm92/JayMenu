@@ -90,10 +90,10 @@ export function ItemPanel({ storeId, item, templates, onClose }: { storeId: stri
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Modifier groups</h3>
+            <h3 className="font-semibold">Modifier Groups</h3>
             <LinkGroupDialog storeId={storeId} item={item} templates={templates} />
           </div>
-          {item.groups.length === 0 && <p className="text-sm text-muted-foreground">No groups linked yet.</p>}
+          {item.groups.length === 0 && <p className="text-sm text-muted-foreground">No modifier groups linked yet.</p>}
           {item.groups.map((g) => {
             const template = templates.find((t) => t.id === g.groupId);
             return template ? <GroupCard key={g.linkId} item={item} group={g} template={template} /> : null;

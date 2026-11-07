@@ -70,7 +70,7 @@ export function OptionRow(p: OptionRowProps) {
       <StockDot inStock={p.inStock} onToggle={p.onStock} scopeHint={p.stockHint} />
       <div className="flex min-w-0 flex-1 items-center">
         <InlineEdit
-          ariaLabel="Option name"
+          ariaLabel="Modifier name"
           value={p.name}
           format={(v) => v}
           parse={(s) => (s.trim() ? s.trim() : undefined)}
@@ -85,7 +85,7 @@ export function OptionRow(p: OptionRowProps) {
       <div className="flex items-center">
         {p.priceOverridden && p.onResetPrice && <ResetButton label="Reset price to shared" onClick={p.onResetPrice} />}
         <InlineEdit
-          ariaLabel="Option price"
+          ariaLabel="Modifier price"
           inputMode="decimal"
           value={p.priceCents}
           format={formatCents}
@@ -97,15 +97,15 @@ export function OptionRow(p: OptionRowProps) {
       </div>
       <div className="flex w-14 justify-end">
         {p.onDelete && (
-          <IconTip label="Remove option">
-            <Button variant="ghost" size="icon-xs" onClick={p.onDelete} aria-label="Remove option">
+          <IconTip label="Remove modifier">
+            <Button variant="ghost" size="icon-xs" onClick={p.onDelete} aria-label="Remove modifier">
               <Trash2Icon />
             </Button>
           </IconTip>
         )}
         {p.hidden && p.onShow && (
           <IconTip label="Show on this item">
-            <Button variant="ghost" size="icon-xs" className="text-amber-700" onClick={p.onShow} aria-label="Show option">
+            <Button variant="ghost" size="icon-xs" className="text-amber-700" onClick={p.onShow} aria-label="Show modifier">
               <EyeOffIcon />
             </Button>
           </IconTip>

@@ -72,7 +72,7 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
               onClick={async () => {
                 const ok = await confirm({
                   title: `Detach ${group.name} from the shared group?`,
-                  description: `${item.name} gets its own copy "${group.name} (${item.name})" with its current options. Later changes to the shared group won't affect it.`,
+                  description: `${item.name} gets its own copy "${group.name} (${item.name})" with its current modifiers. Later changes to the shared group won't affect it.`,
                   confirmLabel: "Detach",
                 });
                 if (ok) await run(() => detachGroupAction({ linkId: group.linkId }));

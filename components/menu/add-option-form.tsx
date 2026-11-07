@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { parseDollarsToCents } from "@/lib/money";
 
 /** Small inline "Add option" form. */
-export function AddOptionForm({ onAdd, label = "Add option" }: { onAdd: (name: string, priceCents: number) => Promise<boolean>; label?: string }) {
+export function AddOptionForm({ onAdd, label = "Add modifier" }: { onAdd: (name: string, priceCents: number) => Promise<boolean>; label?: string }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -35,7 +35,7 @@ export function AddOptionForm({ onAdd, label = "Add option" }: { onAdd: (name: s
         }
       }}
     >
-      <Input autoFocus placeholder="Option name" value={name} onChange={(e) => setName(e.target.value)} className="h-7 flex-1" />
+      <Input autoFocus placeholder="Modifier name" value={name} onChange={(e) => setName(e.target.value)} className="h-7 flex-1" />
       <Input placeholder="$0.00" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} className="h-7 w-20" aria-invalid={cents === null} />
       <Button size="xs" type="submit" disabled={!valid}>
         Add

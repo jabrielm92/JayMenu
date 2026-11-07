@@ -24,7 +24,7 @@ function buildRows(group: ResolvedGroup, template: TemplateSummary): Row[] {
     const hidden = group.hiddenModifierIds.includes(t.id);
     rows.push({
       key: t.id,
-      label: "Option",
+      label: "Modifier",
       shared: optText(t.name, t.priceCents),
       mine: hidden ? "Hidden" : mine ? optText(mine.name, mine.priceCents) : "—",
       differs: hidden || (mine?.overridden.length ?? 0) > 0,
@@ -32,7 +32,7 @@ function buildRows(group: ResolvedGroup, template: TemplateSummary): Row[] {
     });
   }
   for (const m of group.modifiers.filter((x) => x.source === "extra")) {
-    rows.push({ key: m.extraId!, label: "Item-only option", shared: "—", mine: optText(m.name, m.priceCents), differs: true, target: { kind: "extras" } });
+    rows.push({ key: m.extraId!, label: "Item-only modifier", shared: "—", mine: optText(m.name, m.priceCents), differs: true, target: { kind: "extras" } });
   }
   return rows;
 }

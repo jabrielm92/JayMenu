@@ -70,10 +70,10 @@ export function TemplateEditor({ storeId, template, onClose }: { storeId: string
                 onPrice={(v) => edits.setModifierField(m.id, m.name, "price", v)}
                 onStock={() => edits.setStock(m.id, !m.inStock)}
                 onHide={() => edits.hideModifier(m.id, m.name)}
-                hideLabel="Delete option"
+                hideLabel="Delete modifier"
               />
             ))}
-            {template.modifiers.length === 0 && <p className="px-2 py-1 text-sm text-muted-foreground">No options yet.</p>}
+            {template.modifiers.length === 0 && <p className="px-2 py-1 text-sm text-muted-foreground">No modifiers yet.</p>}
             <div className="pt-1">
               <AddOptionForm onAdd={edits.addModifier} />
             </div>

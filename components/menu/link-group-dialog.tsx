@@ -31,21 +31,21 @@ export function LinkGroupDialog({ storeId, item, templates }: { storeId: string;
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <PlusIcon /> Link group
+        <PlusIcon /> Add modifier group
       </Button>
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{mode === "search" ? `Link a group to ${item.name}` : "Create a new group"}</DialogTitle>
+            <DialogTitle>{mode === "search" ? `Add a modifier group to ${item.name}` : "Create a new modifier group"}</DialogTitle>
             <DialogDescription>
-              {mode === "search" ? "Pick a shared group. You can customize it for this item afterwards." : `It will be linked to ${item.name}. Add options after creating it.`}
+              {mode === "search" ? "Pick a shared modifier group. You can customize it for this item afterwards." : `It will be linked to ${item.name}. Add modifiers after creating it.`}
             </DialogDescription>
           </DialogHeader>
           {mode === "search" ? (
             <Command className="rounded-md border">
-              <CommandInput placeholder="Search groups…" />
+              <CommandInput placeholder="Search modifier groups…" />
               <CommandList>
-                <CommandEmpty>No matching groups.</CommandEmpty>
+                <CommandEmpty>No matching modifier groups.</CommandEmpty>
                 <CommandGroup>
                   {available.map((t) => (
                     <CommandItem
@@ -58,7 +58,7 @@ export function LinkGroupDialog({ storeId, item, templates }: { storeId: string;
                     >
                       <span className="flex-1">{t.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {t.modifiers.length} options · used by {t.usedBy}
+                        {t.modifiers.length} modifiers · used by {t.usedBy}
                       </span>
                     </CommandItem>
                   ))}
@@ -95,7 +95,7 @@ export function LinkGroupDialog({ storeId, item, templates }: { storeId: string;
           <DialogFooter>
             {mode === "search" ? (
               <Button variant="outline" onClick={() => setMode("create")}>
-                <PlusIcon /> Create new group
+                <PlusIcon /> Create new modifier group
               </Button>
             ) : (
               <>

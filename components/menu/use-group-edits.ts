@@ -73,7 +73,7 @@ export function useGroupEdits(template: TemplateSummary, itemId?: string) {
       const ok = await confirm({
         title: `Delete "${displayName}" from ${template.name}?`,
         description: `It will be removed from all ${template.links.length} linked items. You can undo this before publishing.`,
-        confirmLabel: "Delete option",
+        confirmLabel: "Delete modifier",
         destructive: true,
       });
       if (!ok) return false;
@@ -82,14 +82,14 @@ export function useGroupEdits(template: TemplateSummary, itemId?: string) {
     const answer = await askScope({
       ...base,
       title: `Hide "${displayName}"`,
-      allWarning: `"All linked items" deletes this option from the shared ${template.name} group.`,
+      allWarning: `"All linked items" deletes this modifier from the shared ${template.name} group.`,
     });
     if (!answer) return false;
     if (answer.scope.type === "all") {
       const ok = await confirm({
         title: `Delete "${displayName}" from ${template.name}?`,
         description: `It will be removed from all ${template.links.length} linked items.`,
-        confirmLabel: "Delete option",
+        confirmLabel: "Delete modifier",
         destructive: true,
       });
       if (!ok) return false;
@@ -103,7 +103,7 @@ export function useGroupEdits(template: TemplateSummary, itemId?: string) {
   }
 
   async function addModifier(name: string, priceCents: number) {
-    const answer = await askScope({ ...base, title: `Add option "${name}"${priceCents ? ` ${formatCents(priceCents)}` : ""}` });
+    const answer = await askScope({ ...base, title: `Add modifier "${name}"${priceCents ? ` ${formatCents(priceCents)}` : ""}` });
     if (!answer) return false;
     return run(() => addModifierAction({ groupId: template.id, name, priceCents, scope: answer.scope }));
   }
