@@ -14,7 +14,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "start:prod": "prisma migrate deploy && tsx prisma/bootstrap.ts && next start",
+    "start:prod": "prisma migrate deploy && tsx prisma/bootstrap.ts && next start -H 0.0.0.0 -p ${PORT:-3000}",
     "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
