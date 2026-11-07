@@ -36,7 +36,7 @@ export const price = (g: ResolvedGroup, name: string) => g.modifiers.find((m) =>
 export const names = (g: ResolvedGroup) => g.modifiers.map((m) => m.name);
 
 export async function ids() {
-  const items = await db.item.findMany();
+  const items = await db.item.findMany({ where: { category: { storeId: DEMO_STORE_ID } } });
   const groups = await db.modifierGroup.findMany({ where: { storeId: DEMO_STORE_ID }, include: { modifiers: true } });
   const itemId = (n: string) => items.find((i) => i.name === n)!.id;
   const g = (n: string) => groups.find((x) => x.name === n)!;
