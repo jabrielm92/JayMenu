@@ -3,6 +3,7 @@
 /** Group Library (7.5): all templates with usage, template editor, and Where-used list. */
 import { MenuDataProvider } from "@/components/editor/menu-data";
 import { PlusIcon, SearchIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { EditorData } from "@/lib/menu/queries";
 import { cn } from "@/lib/utils";
@@ -15,21 +16,19 @@ function syncUrl(groupId: string | null) {
   const url = new URL(window.location.href);
   if (groupId) url.searchParams.set("group", groupId);
   else url.searchParams.delete("group");
-  window.history.replaceState(window.history.state, "", url);
+  window.history.replaceState(null, "", url);
 }
 
-export function GroupLibrary({ data, initialGroup }: { data: EditorData; initialGroup?: string }) {
+export function GroupLibrary({ data }: { data: EditorData }) {
   const { templates, storeId } = data;
-  const [selectedId, setSelectedId] = useState<string | null>(templates.find((t) => t.id === initialGroup)?.id ?? null);
+  // Selection comes from the URL (?group=…) so links always open the clicked modifier group.
+  const selectedId = useSearchParams().get("group");
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   const q = search.trim().toLowerCase();
   const list = q ? templates.filter((t) => t.name.toLowerCase().includes(q) || t.modifiers.some((m) => m.name.toLowerCase().includes(q))) : templates;
   const selected = templates.find((t) => t.id === selectedId) ?? null;
-  const select = (id: string | null) => {
-    setSelectedId(id);
-    syncUrl(id);
-  };
+  const select = (id: string | null) => syncUrl(id);
 
   return (
     <MenuDataProvider categories={data.menu.categories}>

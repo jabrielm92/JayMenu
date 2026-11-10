@@ -2,6 +2,7 @@
 
 /** Menu Editor (7.1): categories | items | item panel. Selection lives in the URL (?category=&item=). */
 import { MenuDataProvider } from "@/components/editor/menu-data";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { EditorData } from "@/lib/menu/queries";
 import { cn } from "@/lib/utils";
@@ -16,32 +17,38 @@ function syncUrl(category: string | null, item: string | null) {
   else url.searchParams.delete("category");
   if (item) url.searchParams.set("item", item);
   else url.searchParams.delete("item");
-  window.history.replaceState(window.history.state, "", url);
+  window.history.replaceState(null, "", url);
 }
 
-export function MenuEditor({ data, initialCategory, initialItem }: { data: EditorData; initialCategory?: string; initialItem?: string }) {
+export function MenuEditor({ data }: { data: EditorData }) {
   const { menu, templates, storeId } = data;
   const allItems = menu.categories.flatMap((c) => c.items.map((i) => ({ ...i, categoryName: c.name })));
-  const startItem = allItems.find((i) => i.id === initialItem);
-  const [categoryId, setCategoryId] = useState<string | null>(
-    startItem?.categoryId ?? menu.categories.find((c) => c.id === initialCategory)?.id ?? menu.categories[0]?.id ?? null,
-  );
-  const [itemId, setItemId] = useState<string | null>(startItem?.id ?? null);
-  const [search, setSearch] = useState("");
 
-  const category = menu.categories.find((c) => c.id === categoryId) ?? menu.categories[0];
-  const item = allItems.find((i) => i.id === itemId) ?? null;
+  // The URL is the source of truth for the selection, so links like ?category=… always open what
+  // was clicked — even when Next.js restores this page's earlier state on navigation.
+  const params = useSearchParams();
+  const urlCategory = params.get("category");
+  const urlItem = params.get("item");
+  const item = allItems.find((i) => i.id === urlItem) ?? null;
+  const category = menu.categories.find((c) => c.id === urlCategory) ?? menu.categories.find((c) => c.id === item?.categoryId) ?? menu.categories[0];
+  const itemId = item?.id ?? null;
+
+  const [search, setSearch] = useState("");
+  // Arriving with a different category in the URL clears any leftover search.
+  const [seenCategory, setSeenCategory] = useState(urlCategory);
+  if (seenCategory !== urlCategory) {
+    setSeenCategory(urlCategory);
+    setSearch("");
+  }
+
   const q = search.trim().toLowerCase();
   const listItems = q ? allItems.filter((i) => i.name.toLowerCase().includes(q)) : (category?.items ?? []);
 
   const selectCategory = (id: string) => {
     setSearch("");
-    setCategoryId(id);
-    setItemId(null);
     syncUrl(id, null);
   };
   const selectItem = (id: string | null) => {
-    setItemId(id);
     syncUrl(category?.id ?? null, id);
   };
 
