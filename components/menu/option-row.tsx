@@ -1,6 +1,6 @@
 "use client";
 
-import { EyeIcon, EyeOffIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, RotateCcwIcon, Trash2Icon, CopyIcon } from "lucide-react";
 import { InlineEdit } from "@/components/editor/inline-edit";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -62,6 +62,9 @@ export type OptionRowProps = {
   onShow?: () => void;
   onDelete?: () => void;
   hideLabel?: string;
+  /** "Copy to items…" (shared modifier: choose items; item-only modifier: copy to other items). */
+  onCopy?: () => void;
+  copyLabel?: string;
 };
 
 export function OptionRow(p: OptionRowProps) {
@@ -95,7 +98,14 @@ export function OptionRow(p: OptionRowProps) {
           className={cn("w-20 text-right tabular-nums", p.priceOverridden && AMBER)}
         />
       </div>
-      <div className="flex w-14 justify-end">
+      <div className="flex w-20 justify-end">
+        {p.onCopy && (
+          <IconTip label={p.copyLabel ?? "Copy to items…"}>
+            <Button variant="ghost" size="icon-xs" onClick={p.onCopy} aria-label={p.copyLabel ?? "Copy to items"}>
+              <CopyIcon />
+            </Button>
+          </IconTip>
+        )}
         {p.onDelete && (
           <IconTip label="Remove modifier">
             <Button variant="ghost" size="icon-xs" onClick={p.onDelete} aria-label="Remove modifier">

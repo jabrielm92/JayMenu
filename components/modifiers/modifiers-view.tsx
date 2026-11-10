@@ -4,14 +4,16 @@
  * Modifiers: every modifier in the store, its modifier group, how many items use it,
  * and which items have their own value. Edits here default to "All linked items".
  */
-import { ChevronDownIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronRightIcon, CopyIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { deleteExtraAction, updateExtraAction } from "@/app/stores/[storeId]/actions";
 import { useChange } from "@/components/editor/use-change";
 import { InlineEdit } from "@/components/editor/inline-edit";
 import { StockDot } from "@/components/menu/option-row";
+import { useCopy } from "@/components/menu/use-copy";
 import { useGroupEdits } from "@/components/menu/use-group-edits";
+import { MenuDataProvider } from "@/components/editor/menu-data";
 import { useConfirm } from "@/components/editor/confirm";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -64,6 +66,7 @@ const priceEdit = { format: formatCents, parse: (s: string) => parseDollarsToCen
 function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }) {
   const { template, mod, itemValues } = row;
   const edits = useGroupEdits(template);
+  const copy = useCopy(template);
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -89,7 +92,11 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
         <td className="px-3 py-1">
           <StockDot inStock={mod.inStock} onToggle={() => edits.setStock(mod.id, !mod.inStock)} scopeHint="everywhere" />
         </td>
-        <td className="px-3 py-1 tabular-nums">{template.usedBy}</td>
+        <td className="px-3 py-1 tabular-nums">
+          <button type="button" className="inline-flex items-center gap-1 hover:underline" title="Choose which items have it" onClick={() => copy.chooseModifierItems(mod.id, mod.name)}>
+            {template.usedBy} <CopyIcon className="size-3 text-muted-foreground" />
+          </button>
+        </td>
         <td className="px-3 py-1">
           {itemValues.length === 0 ? (
             <span className="text-xs text-muted-foreground">Same on all items</span>
@@ -117,11 +124,12 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
   );
 }
 
-function ExtraModifierRow({ storeId, row }: { storeId: string; row: ExtraRow }) {
+function ExtraModifierRow({ storeId, row, template }: { storeId: string; row: ExtraRow; template: TemplateSummary }) {
   const { run } = useChange();
   const confirm = useConfirm();
   const { mod } = row;
   const extraId = mod.extraId!;
+  const copy = useCopy(template);
   return (
     <tr className="hover:bg-muted/40">
       <td className="px-2 py-1">
@@ -153,10 +161,12 @@ function ExtraModifierRow({ storeId, row }: { storeId: string; row: ExtraRow }) 
         <Link href={`/stores/${storeId}/menu?item=${row.itemId}`} className="text-xs hover:underline">
           {row.itemName}
         </Link>
+        <Button variant="ghost" size="xs" className="ml-2" onClick={() => copy.copyExtra(extraId, mod.name, row.itemId)}>
+          <CopyIcon /> Copy
+        </Button>
         <Button
           variant="ghost"
           size="xs"
-          className="ml-2"
           onClick={async () => {
             if (await confirm({ title: `Remove "${mod.name}" from ${row.itemName}?`, confirmLabel: "Remove", destructive: true })) await run(() => deleteExtraAction({ extraId }));
           }}
@@ -182,6 +192,7 @@ export function ModifiersView({ data }: { data: EditorData }) {
   const customizedCount = rows.filter((r) => r.kind === "extra" || r.itemValues.length > 0).length;
 
   return (
+    <MenuDataProvider categories={data.menu.categories}>
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -215,7 +226,7 @@ export function ModifiersView({ data }: { data: EditorData }) {
             </thead>
             <tbody className={cn("divide-y")}>
               {shown.map((r) =>
-                r.kind === "shared" ? <SharedModifierRow key={r.key} storeId={data.storeId} row={r} /> : <ExtraModifierRow key={r.key} storeId={data.storeId} row={r} />,
+                r.kind === "shared" ? <SharedModifierRow key={r.key} storeId={data.storeId} row={r} /> : <ExtraModifierRow key={r.key} storeId={data.storeId} row={r} template={data.templates.find((t) => t.id === r.groupId)!} />,
               )}
               {shown.length === 0 && (
                 <tr>
@@ -229,5 +240,6 @@ export function ModifiersView({ data }: { data: EditorData }) {
         </div>
       </div>
     </div>
+    </MenuDataProvider>
   );
 }

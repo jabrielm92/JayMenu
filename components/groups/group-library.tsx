@@ -1,6 +1,7 @@
 "use client";
 
 /** Group Library (7.5): all templates with usage, template editor, and Where-used list. */
+import { MenuDataProvider } from "@/components/editor/menu-data";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
 import type { EditorData } from "@/lib/menu/queries";
@@ -31,6 +32,7 @@ export function GroupLibrary({ data, initialGroup }: { data: EditorData; initial
   };
 
   return (
+    <MenuDataProvider categories={data.menu.categories}>
     <div className="grid h-full min-h-0 lg:grid-cols-[minmax(22rem,30rem)_1fr]">
       <section className={cn("flex min-h-0 flex-col border-r", selected && "hidden lg:flex")}>
         <div className="flex items-center gap-2 border-b p-3">
@@ -75,5 +77,6 @@ export function GroupLibrary({ data, initialGroup }: { data: EditorData; initial
       </section>
       <CreateGroupDialog storeId={storeId} open={creating} onOpenChange={setCreating} />
     </div>
+    </MenuDataProvider>
   );
 }

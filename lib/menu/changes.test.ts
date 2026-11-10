@@ -263,3 +263,73 @@ describe("publish", () => {
     if (r.ok && r.changeId) expect((await engine.undo(r.changeId)).ok).toBe(false);
   });
 });
+
+describe("copy to / copy from", () => {
+  it("copies a modifier group to items as the same shared group (template untouched)", async () => {
+    const { groupId, itemId } = await ids();
+    const before = await db.modifierGroup.count();
+    const r = await engine.copyGroupToItems(groupId("Protein"), [itemId("Pancake Stack"), itemId("BLT"), itemId("Waffle & Meat")]);
+    expect(r).toMatchObject({ ok: true, summary: "Copied Protein to BLT, Pancake Stack" });
+    expect(await db.modifierGroup.count()).toBe(before);
+    const pancake = await group("Pancake Stack", "Protein");
+    expect(pancake.isCustomized).toBe(false);
+    expect(pancake.sharedWithCount).toBe(6);
+    expect((await engine.copyGroupToItems(groupId("Protein"), [itemId("Waffle & Meat")])).ok).toBe(false);
+  });
+
+  it("copy with an item's changes carries them over, and the copies stay independent", async () => {
+    const { groupId, itemId, link, mod } = await ids();
+    await engine.copyGroupToItems(groupId("Protein"), [itemId("Pancake Stack")], { fromLinkId: await link("Steak & Eggs", "Protein") });
+    const pancake = await group("Pancake Stack", "Protein");
+    expect(price(pancake, "Bacon")).toBe(150);
+    expect(names(pancake)).not.toContain("Scrapple");
+    await engine.setModifierField(mod("Protein", "Bacon"), "price", 200, { type: "item", itemId: itemId("Pancake Stack") });
+    expect(price(await group("Pancake Stack", "Protein"), "Bacon")).toBe(200);
+    expect(price(await group("Steak & Eggs", "Protein"), "Bacon")).toBe(150);
+  });
+
+  it("copies selected modifier groups from another item", async () => {
+    const { groupId, itemId } = await ids();
+    const r = await engine.copyGroupsFromItem(itemId("Meat Omelette"), itemId("Pancake Stack"), [groupId("Protein"), groupId("Side")], { includeChanges: true });
+    expect(r).toMatchObject({ ok: true, summary: "Copied 2 modifier groups from Meat Omelette to Pancake Stack (with its changes)" });
+    const item = await (await import("@/test/db")).item("Pancake Stack");
+    expect(item.groups.map((g) => g.name)).toEqual(["Protein", "Side"]);
+    expect(names(item.groups[0])).toContain("Ham");
+    expect(names(await group("Meat Omelette", "Protein"))).toContain("Ham");
+  });
+
+  it("chooses which items show a modifier, then back to all", async () => {
+    const { mod, itemId } = await ids();
+    await engine.setModifierItems(mod("Protein", "Turkey Bacon"), [itemId("Waffle & Meat"), itemId("Steak & Eggs")]);
+    for (const n of PROTEIN_ITEMS)
+      expect(names(await group(n, "Protein")).includes("Turkey Bacon")).toBe(n === "Waffle & Meat" || n === "Steak & Eggs");
+    await engine.setModifierItems(mod("Protein", "Turkey Bacon"), PROTEIN_ITEMS.map(itemId));
+    for (const n of PROTEIN_ITEMS) expect(names(await group(n, "Protein"))).toContain("Turkey Bacon");
+    // Steak & Eggs keeps its own Bacon price and Scrapple hidden.
+    expect(price(await group("Steak & Eggs", "Protein"), "Bacon")).toBe(150);
+    expect(names(await group("Steak & Eggs", "Protein"))).not.toContain("Scrapple");
+  });
+
+  it("copies an item-only modifier to other items, and each copy is independent", async () => {
+    const { itemId } = await ids();
+    const ham = (await group("Meat Omelette", "Protein")).modifiers.find((m) => m.name === "Ham")!;
+    const r = await engine.copyExtraToItems(ham.extraId!, [itemId("Two Eggs w/ Meat"), itemId("Meat Omelette")]);
+    expect(r).toMatchObject({ ok: true, summary: 'Copied "Ham" (Protein) to Two Eggs w/ Meat' });
+    const copy = (await group("Two Eggs w/ Meat", "Protein")).modifiers.find((m) => m.name === "Ham")!;
+    expect(copy.priceCents).toBe(100);
+    await engine.updateExtra(copy.extraId!, { priceCents: 250 });
+    expect(price(await group("Meat Omelette", "Protein"), "Ham")).toBe(100);
+    expect(names(await group("Waffle & Meat", "Protein"))).not.toContain("Ham");
+  });
+
+  it("each copy is one change and undo restores the exact previous state", async () => {
+    const { groupId, itemId, link, mod } = await ids();
+    const s0 = await dump();
+    const r1 = await engine.copyGroupToItems(groupId("Protein"), [itemId("Pancake Stack"), itemId("BLT")], { fromLinkId: await link("Steak & Eggs", "Protein") });
+    const r2 = await engine.setModifierItems(mod("Protein", "Scrapple"), [itemId("BLT")]);
+    expect(await db.changeLog.count()).toBe(2);
+    expect((await engine.undo((r2 as { changeId: string }).changeId)).ok).toBe(true);
+    expect((await engine.undo((r1 as { changeId: string }).changeId)).ok).toBe(true);
+    expect(await dump()).toEqual(s0);
+  });
+});

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ResolvedItem, TemplateSummary } from "@/lib/menu/resolve";
 import { formatCents, parseDollarsToCents } from "@/lib/money";
 import { GroupCard } from "./group-card";
+import { CopyFromDialog } from "./copy-from-dialog";
 import { LinkGroupDialog } from "./link-group-dialog";
 
 type Patch = Parameters<typeof updateItemAction>[0];
@@ -91,7 +92,10 @@ export function ItemPanel({ storeId, item, templates, onClose }: { storeId: stri
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Modifier Groups</h3>
-            <LinkGroupDialog storeId={storeId} item={item} templates={templates} />
+            <div className="flex gap-2">
+              <CopyFromDialog item={item} />
+              <LinkGroupDialog storeId={storeId} item={item} templates={templates} />
+            </div>
           </div>
           {item.groups.length === 0 && <p className="text-sm text-muted-foreground">No modifier groups linked yet.</p>}
           {item.groups.map((g) => {

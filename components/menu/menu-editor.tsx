@@ -1,6 +1,7 @@
 "use client";
 
 /** Menu Editor (7.1): categories | items | item panel. Selection lives in the URL (?category=&item=). */
+import { MenuDataProvider } from "@/components/editor/menu-data";
 import { useState } from "react";
 import type { EditorData } from "@/lib/menu/queries";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export function MenuEditor({ data, initialCategory, initialItem }: { data: Edito
   };
 
   return (
+    <MenuDataProvider categories={data.menu.categories}>
     <div className="grid h-full min-h-0 grid-cols-[13rem_minmax(16rem,1fr)] lg:grid-cols-[14rem_minmax(18rem,22rem)_1fr]">
       <aside className="min-h-0 border-r">
         <CategoryPane storeId={storeId} categories={menu.categories} selectedId={category?.id ?? null} onSelect={selectCategory} search={search} onSearch={setSearch} />
@@ -65,5 +67,6 @@ export function MenuEditor({ data, initialCategory, initialItem }: { data: Edito
         )}
       </section>
     </div>
+    </MenuDataProvider>
   );
 }

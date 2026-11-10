@@ -1,6 +1,6 @@
 "use client";
 
-import { GitCompareIcon, MoreHorizontalIcon, RotateCcwIcon, ScissorsIcon, UnlinkIcon } from "lucide-react";
+import { CopyIcon, GitCompareIcon, MoreHorizontalIcon, RotateCcwIcon, ScissorsIcon, UnlinkIcon } from "lucide-react";
 import { useState } from "react";
 import {
   deleteExtraAction,
@@ -20,6 +20,7 @@ import { AddOptionForm } from "./add-option-form";
 import { CompareDrawer } from "./compare-drawer";
 import { MinMaxEdit } from "./min-max-edit";
 import { AMBER, OptionRow, ResetButton } from "./option-row";
+import { useCopy } from "./use-copy";
 import { useGroupEdits } from "./use-group-edits";
 
 export function SharedBadge({ group }: { group: ResolvedGroup }) {
@@ -36,6 +37,7 @@ export function SharedBadge({ group }: { group: ResolvedGroup }) {
 export function GroupCard({ item, group, template }: { item: ResolvedItem; group: ResolvedGroup; template: TemplateSummary }) {
   const edits = useGroupEdits(template, item.id);
   const { run, confirm } = edits;
+  const copy = useCopy(template);
   const [compareOpen, setCompareOpen] = useState(false);
   const reset = (targets?: ResetTarget[]) => run(() => resetOverridesAction({ linkId: group.linkId, targets }));
   const hiddenMods = template.modifiers.filter((m) => group.hiddenModifierIds.includes(m.id));
@@ -56,6 +58,9 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
           {group.overriddenFields.includes("name") && <ResetButton label="Reset name to shared" onClick={() => reset([{ kind: "group", field: "name" }])} />}
         </div>
         <SharedBadge group={group} />
+        <Button variant="ghost" size="xs" onClick={() => copy.copyGroup({ item, group })}>
+          <CopyIcon /> Copy to items
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label="Group actions" />}>
             <MoreHorizontalIcon />
@@ -135,6 +140,8 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
               onResetPrice={() => reset([{ kind: "modifier", modifierId: m.modifierId!, field: "price" }])}
               onHide={() => edits.hideModifier(m.modifierId!, m.name)}
               hideLabel="Hide on this item"
+              onCopy={() => copy.chooseModifierItems(m.modifierId!, m.name)}
+              copyLabel="Choose which items have it…"
             />
           ) : (
             <OptionRow
@@ -147,6 +154,8 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
               onName={(v) => run(() => updateExtraAction({ extraId: m.extraId, patch: { name: v } }))}
               onPrice={(v) => run(() => updateExtraAction({ extraId: m.extraId, patch: { priceCents: v } }))}
               onStock={() => run(() => updateExtraAction({ extraId: m.extraId, patch: { inStock: !m.inStock } }))}
+              onCopy={() => copy.copyExtra(m.extraId!, m.name, item.id)}
+              copyLabel="Copy to other items…"
               onDelete={async () => {
                 if (await confirm({ title: `Remove "${m.name}" from ${item.name}?`, confirmLabel: "Remove", destructive: true }))
                   await run(() => deleteExtraAction({ extraId: m.extraId }));
@@ -166,6 +175,8 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
             onPrice={async () => false}
             onStock={() => edits.setStock(m.id, !m.inStock)}
             onShow={() => edits.showModifier(m.id)}
+            onCopy={() => copy.chooseModifierItems(m.id, m.name)}
+            copyLabel="Choose which items have it…"
           />
         ))}
         <div className="pt-1">

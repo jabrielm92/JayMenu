@@ -616,6 +616,130 @@ export function createChangeEngine(db: DB) {
     });
   }
 
+  // ----- Copy to / copy from -----
+  // Copying always links the SAME shared modifier group (never a duplicate). With a source link,
+  // that item's own values (overrides + item-only modifiers) are copied onto the new links too.
+
+  type SourceLink = Awaited<ReturnType<typeof getLink>>;
+
+  async function cloneLinkOnto(rec: Recorder, groupId: string, item: { id: string; groupLinks: { sortOrder: number }[] }, src: SourceLink | null) {
+    const link = await rec.create<{ id: string }>("itemGroupLink", {
+      itemId: item.id,
+      groupId,
+      sortOrder: await nextSortOrder(item.groupLinks),
+      ...(src ? { nameOverride: src.nameOverride, minOverride: src.minOverride, maxOverride: src.maxOverride, maxOverrideSet: src.maxOverrideSet } : {}),
+    });
+    if (src) {
+      for (const o of src.modOverrides)
+        await rec.create("modifierOverride", {
+          linkId: link.id,
+          modifierId: o.modifierId,
+          nameOverride: o.nameOverride,
+          priceCentsOverride: o.priceCentsOverride,
+          hidden: o.hidden,
+          sortOrderOverride: o.sortOrderOverride,
+        });
+      for (const e of src.extras)
+        await rec.create("linkExtraModifier", { linkId: link.id, name: e.name, priceCents: e.priceCents, inStock: e.inStock, sortOrder: e.sortOrder });
+    }
+  }
+
+  const nameList = (names: string[]) => (names.length <= 3 ? names.join(", ") : `${names.length} items`);
+
+  async function loadItems(tx: Tx, itemIds: string[], storeId: string) {
+    const ids = [...new Set(itemIds)];
+    if (!ids.length) throw new ChangeError("No items selected.");
+    const items = await tx.item.findMany({ where: { id: { in: ids } }, include: { groupLinks: true, category: true }, orderBy: { name: "asc" } });
+    if (items.length !== ids.length) throw new ChangeError("Item not found.");
+    if (items.some((i) => i.category.storeId !== storeId)) throw new ChangeError("Items belong to a different store.");
+    return items;
+  }
+
+  /** Copy a modifier group to items. `fromLinkId` also copies that item's own values for the group. */
+  function copyGroupToItems(groupId: string, itemIds: string[], opts: { fromLinkId?: string } = {}) {
+    return run(async (tx, rec) => {
+      const g = await storeIdForGroup(tx, groupId);
+      const src = opts.fromLinkId ? await getLink(tx, opts.fromLinkId) : null;
+      if (src && src.groupId !== groupId) throw new ChangeError("That item's link is for a different modifier group.");
+      const copied: string[] = [];
+      for (const item of await loadItems(tx, itemIds, g.storeId)) {
+        if (item.groupLinks.some((l) => l.groupId === groupId)) continue;
+        await cloneLinkOnto(rec, groupId, item, src);
+        copied.push(item.name);
+      }
+      if (!copied.length) throw new ChangeError("Those items already have this modifier group.");
+      const withCustom = src && (src.modOverrides.length || src.extras.length || src.nameOverride !== null || src.minOverride !== null || src.maxOverrideSet);
+      return {
+        storeId: g.storeId,
+        summary: `Copied ${g.name}${withCustom ? ` (with ${src!.item.name}'s changes)` : ""} to ${nameList(copied)}`,
+        scope: copied.length > 1 ? "items" : "item",
+      };
+    });
+  }
+
+  /** Copy some of one item's modifier groups onto another item. */
+  function copyGroupsFromItem(sourceItemId: string, targetItemId: string, groupIds: string[], opts: { includeChanges?: boolean } = {}) {
+    return run(async (tx, rec) => {
+      const source = await tx.item.findUnique({ where: { id: sourceItemId }, include: { category: true, groupLinks: { include: { group: true } } } });
+      if (!source) throw new ChangeError("Item not found.");
+      const [target] = await loadItems(tx, [targetItemId], source.category.storeId);
+      if (source.id === target.id) throw new ChangeError("Pick a different item to copy from.");
+      const copied: string[] = [];
+      for (const groupId of [...new Set(groupIds)]) {
+        const srcLink = source.groupLinks.find((l) => l.groupId === groupId);
+        if (!srcLink) throw new ChangeError(`${source.name} doesn't have that modifier group.`);
+        if (target.groupLinks.some((l) => l.groupId === groupId)) continue;
+        await cloneLinkOnto(rec, groupId, target, opts.includeChanges ? await getLink(tx, srcLink.id) : null);
+        target.groupLinks.push({ ...srcLink, sortOrder: (await nextSortOrder(target.groupLinks)) });
+        copied.push(srcLink.group.name);
+      }
+      if (!copied.length) throw new ChangeError(`${target.name} already has those modifier groups.`);
+      return {
+        storeId: source.category.storeId,
+        summary: `Copied ${copied.length === 1 ? copied[0] : `${copied.length} modifier groups`} from ${source.name} to ${target.name}${opts.includeChanges ? " (with its changes)" : ""}`,
+        scope: "item",
+      };
+    });
+  }
+
+  /** Choose which items show a shared modifier: selected items show it, the group's other items hide it. */
+  function setModifierItems(modifierId: string, itemIds: string[]) {
+    return run(async (tx, rec) => {
+      const m = await getModifier(tx, modifierId);
+      const { allLinks } = await linksForScope(tx, m.groupId, { type: "all" });
+      const selected = new Set(itemIds);
+      for (const id of selected) if (!allLinks.some((l) => l.itemId === id)) throw new ChangeError(`An item you picked doesn't have ${m.group.name}.`);
+      for (const l of allLinks) await writeModOverride(tx, rec, l.id, m, { hidden: !selected.has(l.itemId) });
+      const n = allLinks.filter((l) => selected.has(l.itemId)).length;
+      return {
+        storeId: m.group.storeId,
+        summary: `"${m.name}" (${m.group.name}) now on ${n === allLinks.length ? "all" : `${n} of ${allLinks.length}`} items`,
+        scope: n === allLinks.length ? "all" : "items",
+      };
+    });
+  }
+
+  /** Copy an item-only modifier to other items that have the same modifier group. */
+  function copyExtraToItems(extraId: string, itemIds: string[]) {
+    return run(async (tx, rec) => {
+      const e = await tx.linkExtraModifier.findUnique({ where: { id: extraId }, include: { link: { include: { item: true, group: true } } } });
+      if (!e) throw new ChangeError("Modifier not found.");
+      const links = await tx.itemGroupLink.findMany({
+        where: { groupId: e.link.groupId, itemId: { in: [...new Set(itemIds)] } },
+        include: { item: true, extras: true },
+      });
+      if (links.length !== new Set(itemIds).size) throw new ChangeError(`An item you picked doesn't have ${e.link.group.name}.`);
+      const copied: string[] = [];
+      for (const l of links) {
+        if (l.id === e.linkId || l.extras.some((x) => x.name.toLowerCase() === e.name.toLowerCase())) continue;
+        await rec.create("linkExtraModifier", { linkId: l.id, name: e.name, priceCents: e.priceCents, inStock: e.inStock, sortOrder: Math.max(e.sortOrder, await nextSortOrder(l.extras)) });
+        copied.push(l.item.name);
+      }
+      if (!copied.length) throw new ChangeError(`Those items already have "${e.name}".`);
+      return { storeId: e.link.group.storeId, summary: `Copied "${e.name}" (${e.link.group.name}) to ${nameList(copied.sort())}`, scope: copied.length > 1 ? "items" : "item" };
+    });
+  }
+
   // ----- Group templates -----
 
   function createGroup(
@@ -826,6 +950,10 @@ export function createChangeEngine(db: DB) {
     resetOverrides,
     detachGroup,
     linkGroup,
+    copyGroupToItems,
+    copyGroupsFromItem,
+    setModifierItems,
+    copyExtraToItems,
     unlinkGroup,
     createGroup,
     deleteGroup,

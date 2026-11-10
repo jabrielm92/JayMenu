@@ -1,12 +1,13 @@
 "use client";
 
-import { ExternalLinkIcon, Trash2Icon, XIcon } from "lucide-react";
+import { CopyIcon, ExternalLinkIcon, Trash2Icon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { deleteGroupAction } from "@/app/stores/[storeId]/actions";
 import { InlineEdit } from "@/components/editor/inline-edit";
 import { AddOptionForm } from "@/components/menu/add-option-form";
 import { MinMaxEdit } from "@/components/menu/min-max-edit";
 import { OptionRow } from "@/components/menu/option-row";
+import { useCopy } from "@/components/menu/use-copy";
 import { useGroupEdits } from "@/components/menu/use-group-edits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import type { TemplateSummary } from "@/lib/menu/resolve";
 export function TemplateEditor({ storeId, template, onClose }: { storeId: string; template: TemplateSummary; onClose: () => void }) {
   const edits = useGroupEdits(template);
   const { run, confirm } = edits;
+  const copy = useCopy(template);
 
   return (
     <div className="flex h-full flex-col">
@@ -29,6 +31,9 @@ export function TemplateEditor({ storeId, template, onClose }: { storeId: string
           className="h-9 flex-1 text-lg font-semibold"
         />
         <Badge variant="secondary">Shared template</Badge>
+        <Button variant="outline" size="sm" onClick={() => copy.copyGroup()}>
+          <CopyIcon /> Copy to items
+        </Button>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -71,6 +76,8 @@ export function TemplateEditor({ storeId, template, onClose }: { storeId: string
                 onStock={() => edits.setStock(m.id, !m.inStock)}
                 onHide={() => edits.hideModifier(m.id, m.name)}
                 hideLabel="Delete modifier"
+                onCopy={template.links.length ? () => copy.chooseModifierItems(m.id, m.name) : undefined}
+                copyLabel="Choose which items have it…"
               />
             ))}
             {template.modifiers.length === 0 && <p className="px-2 py-1 text-sm text-muted-foreground">No modifiers yet.</p>}

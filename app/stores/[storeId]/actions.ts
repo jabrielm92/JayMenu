@@ -132,6 +132,30 @@ export async function unlinkGroupAction(input: unknown) {
   return act(z.object({ linkId: id }), input, (d) => changes().unlinkGroup(d.linkId));
 }
 
+// ----- Copy to / copy from -----
+
+export async function copyGroupToItemsAction(input: unknown) {
+  return act(z.object({ groupId: id, itemIds: z.array(id).min(1).max(500), fromLinkId: id.optional() }), input, (d) =>
+    changes().copyGroupToItems(d.groupId, d.itemIds, { fromLinkId: d.fromLinkId }),
+  );
+}
+
+export async function copyGroupsFromItemAction(input: unknown) {
+  return act(
+    z.object({ sourceItemId: id, targetItemId: id, groupIds: z.array(id).min(1).max(100), includeChanges: z.boolean() }),
+    input,
+    (d) => changes().copyGroupsFromItem(d.sourceItemId, d.targetItemId, d.groupIds, { includeChanges: d.includeChanges }),
+  );
+}
+
+export async function setModifierItemsAction(input: unknown) {
+  return act(z.object({ modifierId: id, itemIds: z.array(id).max(500) }), input, (d) => changes().setModifierItems(d.modifierId, d.itemIds));
+}
+
+export async function copyExtraToItemsAction(input: unknown) {
+  return act(z.object({ extraId: id, itemIds: z.array(id).min(1).max(500) }), input, (d) => changes().copyExtraToItems(d.extraId, d.itemIds));
+}
+
 export async function createGroupAction(input: unknown) {
   return act(
     z.object({
