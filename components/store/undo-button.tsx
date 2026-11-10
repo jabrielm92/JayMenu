@@ -12,8 +12,8 @@ export function UndoButton({ latest }: { latest: { id: string; summary: string }
     <Tooltip>
       <TooltipTrigger
         render={
-          <Button variant="outline" size="sm" disabled={!latest || pending} onClick={() => latest && run(() => undoAction({ changeId: latest.id }))}>
-            <Undo2Icon /> Undo
+          <Button variant="outline" size="sm" aria-label="Undo" disabled={!latest || pending} onClick={() => latest && run(() => undoAction({ changeId: latest.id }))}>
+            <Undo2Icon /> <span className="hidden sm:inline">Undo</span>
           </Button>
         }
       />

@@ -20,17 +20,17 @@ export function CategoriesView({ storeId, categories }: { storeId: string; categ
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Categories</h1>
           <form
-            className="flex gap-2"
+            className="flex w-full gap-2 sm:w-auto"
             onSubmit={async (e) => {
               e.preventDefault();
               if (name.trim() && (await run(() => createCategoryAction({ storeId, name })))) setName("");
             }}
           >
-            <Input placeholder="New category name" value={name} onChange={(e) => setName(e.target.value)} className="h-8 w-56" />
+            <Input placeholder="New category name" value={name} onChange={(e) => setName(e.target.value)} className="h-8 min-w-0 flex-1 sm:w-56 sm:flex-none" />
             <Button size="sm" type="submit" disabled={!name.trim()}>
               <PlusIcon /> Add category
             </Button>
@@ -41,10 +41,13 @@ export function CategoriesView({ storeId, categories }: { storeId: string; categ
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-4 py-2 font-medium">Category</th>
-                <th className="px-4 py-2 font-medium">Items</th>
-                <th className="px-4 py-2 font-medium">Shown on menu</th>
-                <th className="w-16" />
+                <th className="px-3 py-2 font-medium sm:px-4">Category</th>
+                <th className="px-2 py-2 font-medium sm:px-4">Items</th>
+                <th className="px-2 py-2 font-medium sm:px-4">
+                  <span className="sm:hidden">Shown</span>
+                  <span className="hidden sm:inline">Shown on menu</span>
+                </th>
+                <th className="w-10 sm:w-16" />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -52,7 +55,7 @@ export function CategoriesView({ storeId, categories }: { storeId: string; categ
                 const customized = c.items.filter((i) => i.groups.some((g) => g.isCustomized)).length;
                 return (
                   <tr key={c.id} className={c.isActive ? "" : "text-muted-foreground"}>
-                    <td className="px-4 py-1.5">
+                    <td className="px-2 py-1.5 sm:px-4">
                       {renaming === c.id ? (
                         <Input
                           autoFocus
@@ -86,11 +89,11 @@ export function CategoriesView({ storeId, categories }: { storeId: string; categ
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-1.5">
+                    <td className="px-2 py-1.5 sm:px-4">
                       {c.items.length}
-                      {customized > 0 && <span className="text-xs text-amber-700 dark:text-amber-400"> · {customized} with customized modifier groups</span>}
+                      {customized > 0 && <span className="hidden text-xs text-amber-700 sm:inline dark:text-amber-400"> · {customized} with customized modifier groups</span>}
                     </td>
-                    <td className="px-4 py-1.5">
+                    <td className="px-2 py-1.5 sm:px-4">
                       <Switch
                         size="sm"
                         aria-label={`Show ${c.name} on menu`}

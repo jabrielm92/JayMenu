@@ -73,8 +73,24 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
       <tr className="hover:bg-muted/40">
         <td className="px-2 py-1">
           <InlineEdit ariaLabel="Modifier name" value={mod.name} {...nameEdit} onCommit={(v) => edits.setModifierField(mod.id, mod.name, "name", v)} className="w-full" />
+          {/* Phones: the other columns, stacked under the name. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1.5 pb-1 text-xs text-muted-foreground md:hidden">
+            <StockDot inStock={mod.inStock} onToggle={() => edits.setStock(mod.id, !mod.inStock)} scopeHint="everywhere" />
+            <Link href={`/stores/${storeId}/groups?group=${template.id}`} className="underline-offset-2 hover:underline">
+              {template.name}
+            </Link>
+            <button type="button" className="inline-flex items-center gap-1 underline-offset-2 hover:underline" onClick={() => copy.chooseModifierItems(mod.id, mod.name)}>
+              {template.usedBy} items <CopyIcon className="size-3" />
+            </button>
+            {itemValues.length > 0 && (
+              <button type="button" onClick={() => setOpen(!open)} className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
+                {open ? <ChevronDownIcon className="size-3.5" /> : <ChevronRightIcon className="size-3.5" />}
+                {itemValues.length} differ
+              </button>
+            )}
+          </div>
         </td>
-        <td className="px-3 py-1">
+        <td className="hidden px-3 py-1 md:table-cell">
           <Link href={`/stores/${storeId}/groups?group=${template.id}`} className="hover:underline">
             {template.name}
           </Link>
@@ -89,15 +105,15 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
             className="w-20 text-right tabular-nums"
           />
         </td>
-        <td className="px-3 py-1">
+        <td className="hidden px-3 py-1 md:table-cell">
           <StockDot inStock={mod.inStock} onToggle={() => edits.setStock(mod.id, !mod.inStock)} scopeHint="everywhere" />
         </td>
-        <td className="px-3 py-1 tabular-nums">
+        <td className="hidden px-3 py-1 md:table-cell tabular-nums">
           <button type="button" className="inline-flex items-center gap-1 hover:underline" title="Choose which items have it" onClick={() => copy.chooseModifierItems(mod.id, mod.name)}>
             {template.usedBy} <CopyIcon className="size-3 text-muted-foreground" />
           </button>
         </td>
-        <td className="px-3 py-1">
+        <td className="hidden px-3 py-1 md:table-cell">
           {itemValues.length === 0 ? (
             <span className="text-xs text-muted-foreground">Same on all items</span>
           ) : (
@@ -111,13 +127,14 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
       {open &&
         itemValues.map((v) => (
           <tr key={v.itemId} className="bg-amber-50/60 text-xs dark:bg-amber-950/20">
-            <td className="py-1 pr-2 pl-8" colSpan={2}>
-              <Link href={`/stores/${storeId}/menu?item=${v.itemId}`} className="hover:underline">
-                {v.itemName}
-              </Link>
+            <td className="py-1 pr-3 pl-8" colSpan={6}>
+              <div className="flex justify-between gap-3 md:justify-start md:gap-10">
+                <Link href={`/stores/${storeId}/menu?item=${v.itemId}`} className="hover:underline md:w-64">
+                  {v.itemName}
+                </Link>
+                <span className="text-right text-amber-800 dark:text-amber-300">{v.text}</span>
+              </div>
             </td>
-            <td className="px-3 py-1 text-right whitespace-nowrap text-amber-800 dark:text-amber-300">{v.text}</td>
-            <td colSpan={3} />
           </tr>
         ))}
     </>
@@ -136,8 +153,18 @@ function ExtraModifierRow({ storeId, row, template }: { storeId: string; row: Ex
         <div className="flex items-center">
           <InlineEdit ariaLabel="Modifier name" value={mod.name} {...nameEdit} onCommit={(v) => run(() => updateExtraAction({ extraId, patch: { name: v } }))} className="w-full" />
         </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1.5 pb-1 text-xs text-muted-foreground md:hidden">
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">only on</span>
+          <Link href={`/stores/${storeId}/menu?item=${row.itemId}`} className="underline-offset-2 hover:underline">
+            {row.itemName}
+          </Link>
+          <span>{row.groupName}</span>
+          <button type="button" className="inline-flex items-center gap-1 text-primary" onClick={() => copy.copyExtra(extraId, mod.name, row.itemId)}>
+            <CopyIcon className="size-3" /> Copy
+          </button>
+        </div>
       </td>
-      <td className="px-3 py-1">
+      <td className="hidden px-3 py-1 md:table-cell">
         <Link href={`/stores/${storeId}/groups?group=${row.groupId}`} className="hover:underline">
           {row.groupName}
         </Link>
@@ -152,11 +179,11 @@ function ExtraModifierRow({ storeId, row, template }: { storeId: string; row: Ex
           className="w-20 text-right tabular-nums"
         />
       </td>
-      <td className="px-3 py-1">
+      <td className="hidden px-3 py-1 md:table-cell">
         <StockDot inStock={mod.inStock} onToggle={() => run(() => updateExtraAction({ extraId, patch: { inStock: !mod.inStock } }))} scopeHint="on this item" />
       </td>
-      <td className="px-3 py-1 tabular-nums">1</td>
-      <td className="px-3 py-1">
+      <td className="hidden px-3 py-1 md:table-cell tabular-nums">1</td>
+      <td className="hidden px-3 py-1 md:table-cell">
         <span className="mr-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">only on</span>
         <Link href={`/stores/${storeId}/menu?item=${row.itemId}`} className="text-xs hover:underline">
           {row.itemName}
@@ -194,7 +221,7 @@ export function ModifiersView({ data }: { data: EditorData }) {
   return (
     <MenuDataProvider categories={data.menu.categories}>
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-6xl p-6">
+      <div className="mx-auto max-w-6xl p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold">Modifiers</h1>
@@ -202,13 +229,13 @@ export function ModifiersView({ data }: { data: EditorData }) {
               {rows.length} modifiers · {customizedCount} differ on some items. Edits here apply to all linked items by default.
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
             <Label className="flex items-center gap-2 text-sm font-normal">
               <Checkbox checked={onlyCustomized} onCheckedChange={(c) => setOnlyCustomized(!!c)} /> Only ones that differ by item
             </Label>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <SearchIcon className="absolute top-2 left-2 size-4 text-muted-foreground" />
-              <Input placeholder="Search modifiers or modifier groups…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-60 pl-8" />
+              <Input placeholder="Search modifiers or modifier groups…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-full pl-8 sm:w-60" />
             </div>
           </div>
         </div>
@@ -217,11 +244,11 @@ export function ModifiersView({ data }: { data: EditorData }) {
             <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">Modifier</th>
-                <th className="px-3 py-2 font-medium">Modifier Group</th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">Modifier Group</th>
                 <th className="px-3 py-2 text-right font-medium">Price</th>
-                <th className="px-3 py-2 font-medium">Stock</th>
-                <th className="px-3 py-2 font-medium">Items</th>
-                <th className="px-3 py-2 font-medium">Per-item differences</th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">Stock</th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">Items</th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">Per-item differences</th>
               </tr>
             </thead>
             <tbody className={cn("divide-y")}>

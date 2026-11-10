@@ -46,7 +46,7 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
   return (
     <div className={cn("rounded-lg border bg-card", group.isCustomized && "border-amber-300 dark:border-amber-800")}>
       <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
-        <div className="flex min-w-0 flex-1 items-center">
+        <div className="flex min-w-0 basis-full items-center sm:flex-1 sm:basis-auto">
           <InlineEdit
             ariaLabel="Group name"
             value={group.name}
@@ -58,7 +58,7 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
           {group.overriddenFields.includes("name") && <ResetButton label="Reset name to shared" onClick={() => reset([{ kind: "group", field: "name" }])} />}
         </div>
         <SharedBadge group={group} />
-        <Button variant="ghost" size="xs" onClick={() => copy.copyGroup({ item, group })}>
+        <Button variant="ghost" size="xs" className="ml-auto sm:ml-0" onClick={() => copy.copyGroup({ item, group })}>
           <CopyIcon /> Copy to items
         </Button>
         <DropdownMenu>

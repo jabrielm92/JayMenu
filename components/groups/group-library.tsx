@@ -33,7 +33,7 @@ export function GroupLibrary({ data, initialGroup }: { data: EditorData; initial
 
   return (
     <MenuDataProvider categories={data.menu.categories}>
-    <div className="grid h-full min-h-0 lg:grid-cols-[minmax(22rem,30rem)_1fr]">
+    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(22rem,30rem)_1fr]">
       <section className={cn("flex min-h-0 flex-col border-r", selected && "hidden lg:flex")}>
         <div className="flex items-center gap-2 border-b p-3">
           <div className="relative flex-1">
@@ -41,7 +41,7 @@ export function GroupLibrary({ data, initialGroup }: { data: EditorData; initial
             <Input placeholder="Search modifier groups or modifiers…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 pl-8" />
           </div>
           <Button size="sm" onClick={() => setCreating(true)}>
-            <PlusIcon /> New modifier group
+            <PlusIcon /> <span className="hidden sm:inline">New modifier group</span><span className="sm:hidden">New</span>
           </Button>
         </div>
         <ul className="flex-1 divide-y overflow-y-auto">
@@ -68,7 +68,7 @@ export function GroupLibrary({ data, initialGroup }: { data: EditorData; initial
           {list.length === 0 && <li className="px-4 py-6 text-sm text-muted-foreground">No modifier groups found.</li>}
         </ul>
       </section>
-      <section className={cn("min-h-0", !selected && "hidden lg:block")}>
+      <section className={cn("min-h-0 min-w-0", !selected && "hidden lg:block")}>
         {selected ? (
           <TemplateEditor key={selected.id} storeId={storeId} template={selected} onClose={() => select(null)} />
         ) : (

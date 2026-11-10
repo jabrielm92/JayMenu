@@ -128,3 +128,11 @@
     @apply font-sans;
   }
 }
+/* Phones: 16px text in form fields stops iOS Safari from zooming in when a field is tapped. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

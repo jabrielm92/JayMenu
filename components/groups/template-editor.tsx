@@ -1,6 +1,6 @@
 "use client";
 
-import { CopyIcon, ExternalLinkIcon, Trash2Icon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, CopyIcon, ExternalLinkIcon, Trash2Icon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { deleteGroupAction } from "@/app/stores/[storeId]/actions";
 import { InlineEdit } from "@/components/editor/inline-edit";
@@ -21,17 +21,21 @@ export function TemplateEditor({ storeId, template, onClose }: { storeId: string
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        <Button variant="ghost" size="sm" className="-ml-2 lg:hidden" onClick={onClose}>
+          <ChevronLeftIcon /> Back
+        </Button>
         <InlineEdit
           ariaLabel="Group name"
           value={template.name}
           format={(v) => v}
           parse={(s) => (s.trim() ? s.trim() : undefined)}
           onCommit={(v) => edits.setGroupField("name", v)}
-          className="h-9 flex-1 text-lg font-semibold"
+          className="h-9 min-w-0 flex-1 text-lg font-semibold"
         />
+        <div className="flex w-full items-center gap-2 sm:w-auto">
         <Badge variant="secondary">Shared template</Badge>
-        <Button variant="outline" size="sm" onClick={() => copy.copyGroup()}>
+        <Button variant="outline" size="sm" className="ml-auto sm:ml-0" onClick={() => copy.copyGroup()}>
           <CopyIcon /> Copy to items
         </Button>
         <Button
@@ -52,9 +56,10 @@ export function TemplateEditor({ storeId, template, onClose }: { storeId: string
         >
           <Trash2Icon />
         </Button>
-        <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" aria-label="Close" className="hidden lg:inline-flex" onClick={onClose}>
           <XIcon />
         </Button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto p-4">

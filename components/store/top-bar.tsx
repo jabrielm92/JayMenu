@@ -1,3 +1,4 @@
+import { EyeIcon } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
@@ -14,27 +15,38 @@ export async function TopBar({ params }: { params: Promise<{ storeId: string }> 
   const store = await getStoreHeader(storeId);
   if (!store) notFound();
   const base = `/stores/${storeId}`;
+  const n = store.unpublished;
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4">
+    <header className="flex min-h-14 shrink-0 items-center gap-3 border-b px-3 pt-[env(safe-area-inset-top)] sm:gap-4 sm:px-4">
       <Link href={`${base}/menu`} className="font-semibold tracking-tight">
         JayMenu
       </Link>
       <span className="hidden truncate text-sm text-muted-foreground lg:inline">{store.name}</span>
-      <NavLinks base={base} />
-      <div className="ml-auto flex items-center gap-2">
+      <NavLinks />
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <Link
           href={`${base}/publish`}
-          className={store.unpublished ? "whitespace-nowrap text-sm font-medium text-amber-700 hover:underline dark:text-amber-400" : "whitespace-nowrap text-sm text-muted-foreground"}
+          className={n ? "whitespace-nowrap text-sm font-medium text-amber-700 hover:underline dark:text-amber-400" : "whitespace-nowrap text-sm text-muted-foreground"}
         >
-          {store.unpublished ? `${store.unpublished} unpublished` : "Up to date"}<span className="hidden xl:inline">{store.unpublished ? ` change${store.unpublished === 1 ? "" : "s"}` : ""}</span>
+          {n ? (
+            <>
+              {n}
+              <span className="hidden sm:inline"> unpublished</span>
+              <span className="hidden xl:inline"> change{n === 1 ? "" : "s"}</span>
+              <span className="sm:hidden"> to publish</span>
+            </>
+          ) : (
+            <span className="hidden sm:inline">Up to date</span>
+          )}
         </Link>
         <UndoButton latest={store.latest} />
-        <Link href={`${base}/preview`} className="hidden rounded-lg border px-2.5 py-1 text-sm hover:bg-muted sm:inline-block">
-          Preview
+        <Link href={`${base}/preview`} aria-label="Preview" className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-sm hover:bg-muted sm:px-2.5">
+          <EyeIcon className="size-4 sm:hidden" />
+          <span className="hidden sm:inline">Preview</span>
         </Link>
         <Link href={`${base}/publish`} className="whitespace-nowrap rounded-lg bg-primary px-2.5 py-1 text-sm font-medium text-primary-foreground hover:bg-primary/80">
-          Review &amp; Publish
+          <span className="hidden sm:inline">Review &amp; </span>Publish
         </Link>
         {loginRequired() && <SignOutButton />}
       </div>

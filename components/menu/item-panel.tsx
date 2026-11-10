@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2Icon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, Trash2Icon, XIcon } from "lucide-react";
 import { deleteItemAction, updateItemAction } from "@/app/stores/[storeId]/actions";
 import { useConfirm } from "@/components/editor/confirm";
 import { useChange } from "@/components/editor/use-change";
@@ -25,6 +25,9 @@ export function ItemPanel({ storeId, item, templates, onClose }: { storeId: stri
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b px-4 py-3">
+        <Button variant="ghost" size="sm" className="-ml-2 lg:hidden" onClick={onClose}>
+          <ChevronLeftIcon /> Back
+        </Button>
         <h2 className="flex-1 truncate text-lg font-semibold">{item.name}</h2>
         <Button
           variant="ghost"
@@ -38,7 +41,7 @@ export function ItemPanel({ storeId, item, templates, onClose }: { storeId: stri
         >
           <Trash2Icon />
         </Button>
-        <Button variant="ghost" size="icon-sm" aria-label="Close panel" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" aria-label="Close panel" onClick={onClose} className="hidden lg:inline-flex">
           <XIcon />
         </Button>
       </div>
@@ -90,7 +93,7 @@ export function ItemPanel({ storeId, item, templates, onClose }: { storeId: stri
         </section>
 
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-semibold">Modifier Groups</h3>
             <div className="flex gap-2">
               <CopyFromDialog item={item} />

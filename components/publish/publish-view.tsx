@@ -34,7 +34,7 @@ export function PublishView({ storeId, pending, versions }: { storeId: string; p
     });
 
   return (
-    <div className="mx-auto grid h-full max-w-5xl gap-8 overflow-y-auto p-6 lg:grid-cols-[1fr_20rem]">
+    <div className="mx-auto grid h-full max-w-5xl content-start gap-8 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1fr_20rem]">
       <section>
         <h1 className="text-xl font-semibold">Review &amp; Publish</h1>
         <p className="mb-4 text-sm text-muted-foreground">Nothing goes live until you publish. Undo works newest-first.</p>
