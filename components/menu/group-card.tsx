@@ -140,8 +140,10 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
               onResetPrice={() => reset([{ kind: "modifier", modifierId: m.modifierId!, field: "price" }])}
               onHide={() => edits.hideModifier(m.modifierId!, m.name)}
               hideLabel="Hide on this item"
-              onCopy={() => copy.chooseModifierItems(m.modifierId!, m.name)}
-              copyLabel="Choose which items have it…"
+              copyMenu={[
+                { label: "Show/hide on items…", onClick: () => copy.chooseModifierItems(m.modifierId!, m.name) },
+                { label: "Copy to other modifier groups…", onClick: () => copy.copyModifierToGroups({ modifierId: m.modifierId! }, m.name) },
+              ]}
             />
           ) : (
             <OptionRow
@@ -154,8 +156,10 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
               onName={(v) => run(() => updateExtraAction({ extraId: m.extraId, patch: { name: v } }))}
               onPrice={(v) => run(() => updateExtraAction({ extraId: m.extraId, patch: { priceCents: v } }))}
               onStock={() => run(() => updateExtraAction({ extraId: m.extraId, patch: { inStock: !m.inStock } }))}
-              onCopy={() => copy.copyExtra(m.extraId!, m.name, item.id)}
-              copyLabel="Copy to other items…"
+              copyMenu={[
+                { label: `Copy to other items with ${group.name}…`, onClick: () => copy.copyExtra(m.extraId!, m.name, item.id) },
+                { label: "Copy to other modifier groups…", onClick: () => copy.copyModifierToGroups({ extraId: m.extraId! }, m.name) },
+              ]}
               onDelete={async () => {
                 if (await confirm({ title: `Remove "${m.name}" from ${item.name}?`, confirmLabel: "Remove", destructive: true }))
                   await run(() => deleteExtraAction({ extraId: m.extraId }));
@@ -175,8 +179,10 @@ export function GroupCard({ item, group, template }: { item: ResolvedItem; group
             onPrice={async () => false}
             onStock={() => edits.setStock(m.id, !m.inStock)}
             onShow={() => edits.showModifier(m.id)}
-            onCopy={() => copy.chooseModifierItems(m.id, m.name)}
-            copyLabel="Choose which items have it…"
+            copyMenu={[
+              { label: "Show/hide on items…", onClick: () => copy.chooseModifierItems(m.id, m.name) },
+              { label: "Copy to other modifier groups…", onClick: () => copy.copyModifierToGroups({ modifierId: m.id }, m.name) },
+            ]}
           />
         ))}
         <div className="pt-1">

@@ -333,3 +333,50 @@ describe("copy to / copy from", () => {
     expect(await dump()).toEqual(s0);
   });
 });
+
+describe("copy a modifier into other modifier groups", () => {
+  it("'items' mode adds it only on the picked items' groups", async () => {
+    const { mod, itemId, groupId } = await ids();
+    const side = groupId("Side");
+    const r = await engine.copyModifierToGroups({ modifierId: mod("Protein", "Bacon") }, [{ itemId: itemId("Two Eggs w/ Meat"), groupId: side }], "items");
+    expect(r).toMatchObject({ ok: true, summary: 'Copied "Bacon" to Side on Two Eggs w/ Meat (those items only)' });
+    expect(names(await group("Two Eggs w/ Meat", "Side"))).toContain("Bacon");
+    expect(names(await group("Steak & Eggs", "Side"))).not.toContain("Bacon");
+    expect((await db.modifier.findMany({ where: { groupId: side } })).map((m) => m.name)).not.toContain("Bacon");
+  });
+
+  it("'groups' mode adds it to the modifier group for all its items", async () => {
+    const { mod, itemId, groupId } = await ids();
+    const r = await engine.copyModifierToGroups({ modifierId: mod("Protein", "Bacon") }, [{ itemId: itemId("Two Eggs w/ Meat"), groupId: groupId("Side") }], "groups");
+    expect(r).toMatchObject({ ok: true, summary: 'Added "Bacon" to Side (all their items)' });
+    for (const n of ["Two Eggs w/ Meat", "Steak & Eggs", "Cheeseburger"]) expect(names(await group(n, "Side"))).toContain("Bacon");
+  });
+
+  it("copies an item-only modifier, skips the source group and existing names", async () => {
+    const { itemId, groupId } = await ids();
+    const ham = (await group("Meat Omelette", "Protein")).modifiers.find((m) => m.name === "Ham")!;
+    const r = await engine.copyModifierToGroups(
+      { extraId: ham.extraId! },
+      [
+        { itemId: itemId("Meat Omelette"), groupId: groupId("Side") },
+        { itemId: itemId("Waffle & Meat"), groupId: groupId("Protein") }, // source group → skipped
+      ],
+      "items",
+    );
+    expect(r).toMatchObject({ ok: true, summary: 'Copied "Ham" to Side on Meat Omelette (those items only)' });
+    expect(price(await group("Meat Omelette", "Side"), "Ham")).toBe(100);
+    const again = await engine.copyModifierToGroups({ extraId: ham.extraId! }, [{ itemId: itemId("Meat Omelette"), groupId: groupId("Side") }], "items");
+    expect(again.ok).toBe(false);
+  });
+
+  it("rejects an item that doesn't have the picked group, and undo restores", async () => {
+    const { mod, itemId, groupId } = await ids();
+    const bad = await engine.copyModifierToGroups({ modifierId: mod("Protein", "Bacon") }, [{ itemId: itemId("BLT"), groupId: groupId("Side") }], "items");
+    expect(bad.ok).toBe(false);
+    const s0 = await dump();
+    const r = await engine.copyModifierToGroups({ modifierId: mod("Protein", "Bacon") }, [{ itemId: itemId("Cheeseburger"), groupId: groupId("Side") }, { itemId: itemId("BLT"), groupId: groupId("Bread") }], "groups");
+    expect(r.ok).toBe(true);
+    expect((await engine.undo((r as { changeId: string }).changeId)).ok).toBe(true);
+    expect(await dump()).toEqual(s0);
+  });
+});

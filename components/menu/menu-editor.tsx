@@ -53,7 +53,7 @@ export function MenuEditor({ data }: { data: EditorData }) {
   };
 
   return (
-    <MenuDataProvider categories={data.menu.categories}>
+    <MenuDataProvider categories={data.menu.categories} templates={data.templates}>
     <div className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[13rem_minmax(16rem,1fr)] lg:grid-cols-[14rem_minmax(18rem,22rem)_1fr]">
       <aside className="hidden min-h-0 border-r md:block">
         <CategoryPane storeId={storeId} categories={menu.categories} selectedId={category?.id ?? null} onSelect={selectCategory} search={search} onSearch={setSearch} />

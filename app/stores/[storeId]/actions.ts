@@ -156,6 +156,18 @@ export async function copyExtraToItemsAction(input: unknown) {
   return act(z.object({ extraId: id, itemIds: z.array(id).min(1).max(500) }), input, (d) => changes().copyExtraToItems(d.extraId, d.itemIds));
 }
 
+export async function copyModifierToGroupsAction(input: unknown) {
+  return act(
+    z.object({
+      source: z.union([z.object({ modifierId: id }), z.object({ extraId: id })]),
+      targets: z.array(z.object({ itemId: id, groupId: id })).min(1).max(500),
+      mode: z.enum(["items", "groups"]),
+    }),
+    input,
+    (d) => changes().copyModifierToGroups(d.source, d.targets, d.mode),
+  );
+}
+
 export async function createGroupAction(input: unknown) {
   return act(
     z.object({

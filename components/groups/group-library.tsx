@@ -31,7 +31,7 @@ export function GroupLibrary({ data }: { data: EditorData }) {
   const select = (id: string | null) => syncUrl(id);
 
   return (
-    <MenuDataProvider categories={data.menu.categories}>
+    <MenuDataProvider categories={data.menu.categories} templates={data.templates}>
     <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(22rem,30rem)_1fr]">
       <section className={cn("flex min-h-0 flex-col border-r", selected && "hidden lg:flex")}>
         <div className="flex items-center gap-2 border-b p-3">

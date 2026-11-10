@@ -81,8 +81,10 @@ export function TemplateEditor({ storeId, template, onClose }: { storeId: string
                 onStock={() => edits.setStock(m.id, !m.inStock)}
                 onHide={() => edits.hideModifier(m.id, m.name)}
                 hideLabel="Delete modifier"
-                onCopy={template.links.length ? () => copy.chooseModifierItems(m.id, m.name) : undefined}
-                copyLabel="Choose which items have it…"
+                copyMenu={[
+                  ...(template.links.length ? [{ label: "Show/hide on items…", onClick: () => copy.chooseModifierItems(m.id, m.name) }] : []),
+                  { label: "Copy to other modifier groups…", onClick: () => copy.copyModifierToGroups({ modifierId: m.id }, m.name) },
+                ]}
               />
             ))}
             {template.modifiers.length === 0 && <p className="px-2 py-1 text-sm text-muted-foreground">No modifiers yet.</p>}

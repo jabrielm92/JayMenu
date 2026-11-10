@@ -644,7 +644,7 @@ export function createChangeEngine(db: DB) {
     }
   }
 
-  const nameList = (names: string[]) => (names.length <= 3 ? names.join(", ") : `${names.length} items`);
+  const nameList = (names: string[], noun = "items") => (names.length <= 3 ? names.join(", ") : `${names.length} ${noun}`);
 
   async function loadItems(tx: Tx, itemIds: string[], storeId: string) {
     const ids = [...new Set(itemIds)];
@@ -716,6 +716,61 @@ export function createChangeEngine(db: DB) {
         summary: `"${m.name}" (${m.group.name}) now on ${n === allLinks.length ? "all" : `${n} of ${allLinks.length}`} items`,
         scope: n === allLinks.length ? "all" : "items",
       };
+    });
+  }
+
+  /**
+   * Copy a modifier into OTHER modifier groups, picked as (item, modifier group) pairs.
+   *  - mode "items": added only on the picked items (item-only modifier on each link).
+   *  - mode "groups": added to each picked modifier group itself, so every item using it gets it.
+   * Targets that already have a modifier with the same name, or are the source's own group, are skipped.
+   */
+  function copyModifierToGroups(
+    source: { modifierId: string } | { extraId: string },
+    targets: { itemId: string; groupId: string }[],
+    mode: "items" | "groups",
+  ) {
+    return run(async (tx, rec) => {
+      let src: { name: string; priceCents: number; groupId: string; storeId: string };
+      if ("modifierId" in source) {
+        const m = await getModifier(tx, source.modifierId);
+        src = { name: m.name, priceCents: m.priceCents, groupId: m.groupId, storeId: m.group.storeId };
+      } else {
+        const e = await tx.linkExtraModifier.findUnique({ where: { id: source.extraId }, include: { link: { include: { group: true } } } });
+        if (!e) throw new ChangeError("Modifier not found.");
+        src = { name: e.name, priceCents: e.priceCents, groupId: e.link.groupId, storeId: e.link.group.storeId };
+      }
+      const pairs = [...new Map(targets.map((t) => [`${t.itemId}|${t.groupId}`, t])).values()];
+      if (!pairs.length) throw new ChangeError("No modifier groups selected.");
+      const links = await tx.itemGroupLink.findMany({
+        where: { OR: pairs.map((t) => ({ itemId: t.itemId, groupId: t.groupId })) },
+        include: { item: true, group: { include: { modifiers: true } }, extras: true },
+        orderBy: [{ item: { name: "asc" } }],
+      });
+      if (links.length !== pairs.length) throw new ChangeError("An item you picked doesn't have that modifier group.");
+      if (links.some((l) => l.group.storeId !== src.storeId)) throw new ChangeError("Modifier groups belong to a different store.");
+      const same = (n: string) => n.trim().toLowerCase() === src.name.trim().toLowerCase();
+
+      const copied: string[] = [];
+      if (mode === "items") {
+        for (const l of links) {
+          if (l.groupId === src.groupId || l.group.modifiers.some((m) => same(m.name)) || l.extras.some((e) => same(e.name))) continue;
+          const sortOrder = Math.max(await nextSortOrder(l.group.modifiers), await nextSortOrder(l.extras));
+          await rec.create("linkExtraModifier", { linkId: l.id, name: src.name, priceCents: src.priceCents, sortOrder });
+          copied.push(`${l.group.name} on ${l.item.name}`);
+        }
+      } else {
+        const groups = [...new Map(links.map((l) => [l.groupId, l.group])).values()];
+        for (const g of groups) {
+          if (g.id === src.groupId || g.modifiers.some((m) => same(m.name))) continue;
+          await rec.create("modifier", { groupId: g.id, name: src.name, priceCents: src.priceCents, sortOrder: await nextSortOrder(g.modifiers) });
+          copied.push(g.name);
+        }
+      }
+      if (!copied.length) throw new ChangeError(`Those modifier groups already have "${src.name}".`);
+      return mode === "items"
+        ? { storeId: src.storeId, summary: `Copied "${src.name}" to ${nameList(copied, "modifier groups")} (those items only)`, scope: copied.length > 1 ? "items" : "item" }
+        : { storeId: src.storeId, summary: `Added "${src.name}" to ${nameList(copied, "modifier groups")} (all their items)`, scope: "all" };
     });
   }
 
@@ -954,6 +1009,7 @@ export function createChangeEngine(db: DB) {
     copyGroupsFromItem,
     setModifierItems,
     copyExtraToItems,
+    copyModifierToGroups,
     unlinkGroup,
     createGroup,
     deleteGroup,

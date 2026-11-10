@@ -3,6 +3,7 @@
 import { EyeIcon, EyeOffIcon, RotateCcwIcon, Trash2Icon, CopyIcon } from "lucide-react";
 import { InlineEdit } from "@/components/editor/inline-edit";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents, parseDollarsToCents } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,22 @@ export function StockDot({ inStock, onToggle, scopeHint }: { inStock: boolean; o
   );
 }
 
+/** Copy icon that opens a small menu of copy actions. */
+export function CopyMenu({ entries, children }: { entries: { label: string; onClick: () => void }[]; children?: React.ReactNode }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={children ? undefined : <Button variant="ghost" size="icon-xs" aria-label="Copy options" />}>{children ?? <CopyIcon />}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        {entries.map((e) => (
+          <DropdownMenuItem key={e.label} onClick={e.onClick}>
+            {e.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export type OptionRowProps = {
   name: string;
   priceCents: number;
@@ -62,9 +79,8 @@ export type OptionRowProps = {
   onShow?: () => void;
   onDelete?: () => void;
   hideLabel?: string;
-  /** "Copy to items…" (shared modifier: choose items; item-only modifier: copy to other items). */
-  onCopy?: () => void;
-  copyLabel?: string;
+  /** Copy menu entries (e.g. "Show/hide on items…", "Copy to other modifier groups…"). */
+  copyMenu?: { label: string; onClick: () => void }[];
 };
 
 export function OptionRow(p: OptionRowProps) {
@@ -99,13 +115,7 @@ export function OptionRow(p: OptionRowProps) {
         />
       </div>
       <div className="flex w-20 justify-end">
-        {p.onCopy && (
-          <IconTip label={p.copyLabel ?? "Copy to items…"}>
-            <Button variant="ghost" size="icon-xs" onClick={p.onCopy} aria-label={p.copyLabel ?? "Copy to items"}>
-              <CopyIcon />
-            </Button>
-          </IconTip>
-        )}
+        {p.copyMenu && p.copyMenu.length > 0 && <CopyMenu entries={p.copyMenu} />}
         {p.onDelete && (
           <IconTip label="Remove modifier">
             <Button variant="ghost" size="icon-xs" onClick={p.onDelete} aria-label="Remove modifier">

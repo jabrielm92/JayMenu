@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { deleteExtraAction, updateExtraAction } from "@/app/stores/[storeId]/actions";
 import { useChange } from "@/components/editor/use-change";
 import { InlineEdit } from "@/components/editor/inline-edit";
-import { StockDot } from "@/components/menu/option-row";
+import { CopyMenu, StockDot } from "@/components/menu/option-row";
 import { useCopy } from "@/components/menu/use-copy";
 import { useGroupEdits } from "@/components/menu/use-group-edits";
 import { MenuDataProvider } from "@/components/editor/menu-data";
@@ -68,6 +68,10 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
   const edits = useGroupEdits(template);
   const copy = useCopy(template);
   const [open, setOpen] = useState(false);
+  const sharedCopy = [
+    { label: "Show/hide on items…", onClick: () => copy.chooseModifierItems(mod.id, mod.name) },
+    { label: "Copy to other modifier groups…", onClick: () => copy.copyModifierToGroups({ modifierId: mod.id }, mod.name) },
+  ];
   return (
     <>
       <tr className="hover:bg-muted/40">
@@ -79,9 +83,11 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
             <Link href={`/stores/${storeId}/groups?group=${template.id}`} className="underline-offset-2 hover:underline">
               {template.name}
             </Link>
-            <button type="button" className="inline-flex items-center gap-1 underline-offset-2 hover:underline" onClick={() => copy.chooseModifierItems(mod.id, mod.name)}>
-              {template.usedBy} items <CopyIcon className="size-3" />
-            </button>
+            <CopyMenu entries={sharedCopy}>
+              <span className="inline-flex items-center gap-1 underline-offset-2 hover:underline">
+                {template.usedBy} items <CopyIcon className="size-3" />
+              </span>
+            </CopyMenu>
             {itemValues.length > 0 && (
               <button type="button" onClick={() => setOpen(!open)} className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
                 {open ? <ChevronDownIcon className="size-3.5" /> : <ChevronRightIcon className="size-3.5" />}
@@ -109,9 +115,11 @@ function SharedModifierRow({ storeId, row }: { storeId: string; row: SharedRow }
           <StockDot inStock={mod.inStock} onToggle={() => edits.setStock(mod.id, !mod.inStock)} scopeHint="everywhere" />
         </td>
         <td className="hidden px-3 py-1 md:table-cell tabular-nums">
-          <button type="button" className="inline-flex items-center gap-1 hover:underline" title="Choose which items have it" onClick={() => copy.chooseModifierItems(mod.id, mod.name)}>
-            {template.usedBy} <CopyIcon className="size-3 text-muted-foreground" />
-          </button>
+          <CopyMenu entries={sharedCopy}>
+            <span className="inline-flex items-center gap-1 hover:underline">
+              {template.usedBy} <CopyIcon className="size-3 text-muted-foreground" />
+            </span>
+          </CopyMenu>
         </td>
         <td className="hidden px-3 py-1 md:table-cell">
           {itemValues.length === 0 ? (
@@ -147,6 +155,10 @@ function ExtraModifierRow({ storeId, row, template }: { storeId: string; row: Ex
   const { mod } = row;
   const extraId = mod.extraId!;
   const copy = useCopy(template);
+  const extraCopy = [
+    { label: `Copy to other items with ${row.groupName}…`, onClick: () => copy.copyExtra(extraId, mod.name, row.itemId) },
+    { label: "Copy to other modifier groups…", onClick: () => copy.copyModifierToGroups({ extraId }, mod.name) },
+  ];
   return (
     <tr className="hover:bg-muted/40">
       <td className="px-2 py-1">
@@ -159,9 +171,11 @@ function ExtraModifierRow({ storeId, row, template }: { storeId: string; row: Ex
             {row.itemName}
           </Link>
           <span>{row.groupName}</span>
-          <button type="button" className="inline-flex items-center gap-1 text-primary" onClick={() => copy.copyExtra(extraId, mod.name, row.itemId)}>
-            <CopyIcon className="size-3" /> Copy
-          </button>
+          <CopyMenu entries={extraCopy}>
+            <span className="inline-flex items-center gap-1 text-primary">
+              <CopyIcon className="size-3" /> Copy
+            </span>
+          </CopyMenu>
         </div>
       </td>
       <td className="hidden px-3 py-1 md:table-cell">
@@ -188,9 +202,11 @@ function ExtraModifierRow({ storeId, row, template }: { storeId: string; row: Ex
         <Link href={`/stores/${storeId}/menu?item=${row.itemId}`} className="text-xs hover:underline">
           {row.itemName}
         </Link>
-        <Button variant="ghost" size="xs" className="ml-2" onClick={() => copy.copyExtra(extraId, mod.name, row.itemId)}>
-          <CopyIcon /> Copy
-        </Button>
+        <CopyMenu entries={extraCopy}>
+          <span className="ml-2 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs hover:bg-muted">
+            <CopyIcon className="size-3" /> Copy
+          </span>
+        </CopyMenu>
         <Button
           variant="ghost"
           size="xs"
@@ -219,7 +235,7 @@ export function ModifiersView({ data }: { data: EditorData }) {
   const customizedCount = rows.filter((r) => r.kind === "extra" || r.itemValues.length > 0).length;
 
   return (
-    <MenuDataProvider categories={data.menu.categories}>
+    <MenuDataProvider categories={data.menu.categories} templates={data.templates}>
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
